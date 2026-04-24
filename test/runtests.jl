@@ -16,6 +16,13 @@ using Test
         exported = names(SpheroidalWaveFunctions)
         @test :smn in exported
         @test :rmn in exported
+        @test :radial_wronskian in exported
+        @test :accuracy in exported
+        @test :eigenvalue in exported
+        @test :jacobian_eigen in exported
+        @test :jacobian_smn in exported
+        @test :jacobian_rmn in exported
+        @test :find_c_for_eigenvalue in exported
         @test !(:set_backend_library! in exported)
         @test !(:backend_library in exported)
     end
@@ -23,8 +30,19 @@ using Test
     @testset "Argument Validation" begin
         @test_throws ErrorException smn(0, 0, 1.0, [0.0]; precision=:bad)
         @test_throws ErrorException rmn(0, 0, 1.0, [1.1]; precision=:bad)
+        @test_throws ErrorException eigenvalue(0, 0, 1.0; precision=:bad)
+        @test_throws ErrorException jacobian_eigen(0, 0, 1.0; precision=:bad)
         @test_throws ErrorException smn(0, 0, 1.0, [0.0]; spheroid=:bad)
         @test_throws ErrorException rmn(0, 0, 1.0, [1.1]; spheroid=:bad)
+        @test_throws ErrorException eigenvalue(0, 0, 1.0; spheroid=:bad)
+        @test_throws ErrorException jacobian_eigen(0, 0, 1.0; h=0.0)
+        @test_throws ErrorException jacobian_eigen(0, 0, 1.0; rtol=0.0)
+        @test_throws ErrorException jacobian_eigen(0, 0, 1.0; atol=0.0)
+        @test_throws ErrorException find_c_for_eigenvalue(0, 0, 1.0; bracket=(1.0, 0.0))
+        @test_throws ErrorException find_c_for_eigenvalue(0, 0, 1.0; bracket=(0.0, 1.0), atol=0.0)
+        @test_throws ErrorException find_c_for_eigenvalue(0, 0, 1.0; bracket=(0.0, 1.0), rtol=0.0)
+        @test_throws ErrorException find_c_for_eigenvalue(0, 0, 1.0; bracket=(0.0, 1.0), maxiter=0)
+        @test_throws ErrorException accuracy(0, 0, 1.0, [1.1]; target=:bad)
     end
 
     @testset "Double Precision Numerical Paths" begin
@@ -71,6 +89,7 @@ using Test
             r2 = rmn(0, 0, 0.0, x; spheroid=:prolate, precision=:double, kind=2)
             r3 = rmn(0, 0, 0.0, x; spheroid=:prolate, precision=:double, kind=3)
             r4 = rmn(0, 0, 0.0, x; spheroid=:prolate, precision=:double, kind=4)
+            w = radial_wronskian(0, 0, 0.0, x; spheroid=:prolate, precision=:double)
 
             assert_allclose(real.(r1.value), [1.0, 1.0]; atol=1e-10)
             assert_allclose(imag.(r1.value), [0.0, 0.0]; atol=1e-10)
@@ -91,6 +110,11 @@ using Test
             assert_allclose(imag.(r4.value), -q0; atol=5e-9)
             assert_allclose(real.(r4.derivative), [0.0, 0.0]; atol=1e-9)
             assert_allclose(imag.(r4.derivative), -q0d; atol=5e-9)
+
+            # Exact c=0 Wronskian identity: P_n Q_n' - P_n' Q_n = -1 / (x^2 - 1)
+            w_expected = ComplexF64.(-1.0 ./ (x .^ 2 .- 1.0))
+            assert_allclose(real.(w), real.(w_expected); atol=5e-9)
+            assert_allclose(imag.(w), imag.(w_expected); atol=5e-9)
 
             # Complex-family c=0 benchmark equivalence to real Legendre limit.
             scp = smn(0, 2, 0.0 + 0.0im, eta; spheroid=:prolate, precision=:double)
@@ -190,6 +214,137 @@ using Test
             @test_throws ErrorException rmn(0, 1, 1.0, [-0.1]; spheroid=:oblate, precision=:double, kind=1)
             @test_throws ErrorException rmn(0, 1, 1.0 + 0.1im, [0.9]; spheroid=:prolate, precision=:double, kind=1)
             @test_throws ErrorException rmn(0, 1, 1.0 + 0.1im, [-0.1]; spheroid=:oblate, precision=:double, kind=1)
+
+            # Accuracy API direct checks.
+            acc_ang_c0 = accuracy(0, 2, 0.0, eta; spheroid=:prolate, precision=:double, target=:angular)
+            acc_rad_c0 = accuracy(0, 0, 0.0, x; spheroid=:prolate, precision=:double, target=:radial, kind=1)
+            @test acc_ang_c0 == fill(15, length(eta))
+            @test acc_rad_c0 == fill(15, length(x))
+
+            acc_ang_real = accuracy(0, 1, 200.0, [0.0, 0.2, 0.4]; spheroid=:prolate, precision=:double, target=:angular)
+            acc_rad_real = accuracy(0, 1, 200.0, [1.1, 1.2]; spheroid=:prolate, precision=:double, target=:radial, kind=1)
+            acc_ang_cplx = accuracy(0, 1, 200.0 + 0.1im, [0.0, 0.2, 0.4]; spheroid=:oblate, precision=:double, target=:angular)
+            acc_rad_cplx = accuracy(0, 1, 200.0 + 0.1im, [1.2, 1.4]; spheroid=:oblate, precision=:double, target=:radial, kind=3)
+
+            @test length(acc_ang_real) == 3 && all(>=(0), acc_ang_real)
+            @test length(acc_rad_real) == 2 && all(>=(0), acc_rad_real)
+            @test length(acc_ang_cplx) == 3 && all(>=(0), acc_ang_cplx)
+            @test length(acc_rad_cplx) == 2 && all(>=(0), acc_rad_cplx)
+
+            # Eigenvalue API: real/complex and prolate/oblate symbol routing.
+            @test eigenvalue(0, 2, 0.0; spheroid=:prolate, precision=:double) == 6.0
+            @test eigenvalue(0, 2, 0.0; spheroid=:oblate, precision=:double) == 6.0
+            @test eigenvalue(0, 2, 0.0 + 0.0im; spheroid=:prolate, precision=:double) == 6.0 + 0.0im
+            @test eigenvalue(0, 2, 0.0 + 0.0im; spheroid=:oblate, precision=:double) == 6.0 + 0.0im
+
+            λp = eigenvalue(0, 1, 200.0; spheroid=:prolate, precision=:double)
+            λo = eigenvalue(0, 1, 200.0; spheroid=:oblate, precision=:double)
+            λcp = eigenvalue(0, 1, 200.0 + 0.1im; spheroid=:prolate, precision=:double)
+            λco = eigenvalue(0, 1, 200.0 + 0.1im; spheroid=:oblate, precision=:double)
+            @test isfinite(λp)
+            @test isfinite(λo)
+            @test isfinite(real(λcp)) && isfinite(imag(λcp))
+            @test isfinite(real(λco)) && isfinite(imag(λco))
+
+            # Nonzero-c cross-family consistency at purely real c.
+            λpr = eigenvalue(0, 1, 200.0; spheroid=:prolate, precision=:double)
+            λpc = eigenvalue(0, 1, 200.0 + 0.0im; spheroid=:prolate, precision=:double)
+            λor = eigenvalue(0, 1, 200.0; spheroid=:oblate, precision=:double)
+            λoc = eigenvalue(0, 1, 200.0 + 0.0im; spheroid=:oblate, precision=:double)
+            @test isapprox(real(λpc), λpr; atol=1e-10, rtol=1e-10)
+            @test isapprox(imag(λpc), 0.0; atol=1e-10, rtol=0.0)
+            @test isapprox(real(λoc), λor; atol=1e-10, rtol=1e-10)
+            @test isapprox(imag(λoc), 0.0; atol=1e-10, rtol=0.0)
+
+            # Root finding: recover c from a target eigenvalue.
+            c_true_p = 80.0
+            λ_target_p = eigenvalue(0, 1, c_true_p; spheroid=:prolate, precision=:double)
+            root_p = find_c_for_eigenvalue(0, 1, λ_target_p;
+                                           bracket=(60.0, 100.0),
+                                           spheroid=:prolate,
+                                           precision=:double)
+            @test root_p.converged
+            @test isapprox(root_p.c, c_true_p; atol=1e-6, rtol=1e-8)
+            @test abs(root_p.residual) <= 1e-6
+
+            c_true_o = 60.0
+            λ_target_o = eigenvalue(0, 1, c_true_o; spheroid=:oblate, precision=:double)
+            root_o = find_c_for_eigenvalue(0, 1, λ_target_o;
+                                           bracket=(40.0, 80.0),
+                                           spheroid=:oblate,
+                                           precision=:double,
+                                           use_jacobian=false)
+            @test root_o.converged
+            @test isapprox(root_o.c, c_true_o; atol=1e-6, rtol=1e-8)
+
+            @test_throws ErrorException find_c_for_eigenvalue(0, 1, 1e12;
+                                                               bracket=(0.0, 1.0),
+                                                               spheroid=:prolate,
+                                                               precision=:double)
+
+            # Jacobians: compare against independent finite differences.
+            h = 1e-6
+            λjac = jacobian_eigen(0, 1, 200.0; spheroid=:prolate, precision=:double, h=h, adaptive=false)
+            λfd = (eigenvalue(0, 1, 200.0 + h; spheroid=:prolate, precision=:double) -
+                   eigenvalue(0, 1, 200.0 - h; spheroid=:prolate, precision=:double)) / (2h)
+            @test isapprox(λjac, λfd; atol=1e-8, rtol=1e-8)
+
+                λjac_meta = jacobian_eigen(0, 1, 200.0; spheroid=:prolate, precision=:double, h=h, with_metadata=true, adaptive=false)
+                 @test isapprox(λjac_meta.derivative, λjac; atol=1e-8, rtol=1e-8)
+                 @test λjac_meta.metadata.step_used > 0.0
+                 @test λjac_meta.metadata.step_used <= h
+                 @test λjac_meta.metadata.relative_change_when_halving_step >= 0.0
+                 @test λjac_meta.metadata.finite_flag
+                 @test λjac_meta.metadata.conditioning_flag in (:good, :warning, :poor)
+                 @test λjac_meta.metadata.suggested_action in (:accept, :retry_smaller_h, :use_quad)
+
+            λcjac = jacobian_eigen(0, 1, 200.0 + 0.1im; spheroid=:oblate, precision=:double, h=h, adaptive=false)
+            λcfd_re = (eigenvalue(0, 1, 200.0 + h + 0.1im; spheroid=:oblate, precision=:double) -
+                       eigenvalue(0, 1, 200.0 - h + 0.1im; spheroid=:oblate, precision=:double)) / (2h)
+            λcfd_im = (eigenvalue(0, 1, 200.0 + (0.1 + h)im; spheroid=:oblate, precision=:double) -
+                       eigenvalue(0, 1, 200.0 + (0.1 - h)im; spheroid=:oblate, precision=:double)) / (2h)
+            @test isapprox(λcjac.d_dcreal, λcfd_re; atol=1e-8, rtol=1e-8)
+            @test isapprox(λcjac.d_dcimag, λcfd_im; atol=1e-8, rtol=1e-8)
+
+                λcjac_meta = jacobian_eigen(0, 1, 200.0 + 0.1im; spheroid=:oblate, precision=:double, h=h, with_metadata=true, adaptive=false)
+                 @test isapprox(λcjac_meta.d_dcreal, λcjac.d_dcreal; atol=1e-8, rtol=1e-8)
+                 @test isapprox(λcjac_meta.d_dcimag, λcjac.d_dcimag; atol=1e-8, rtol=1e-8)
+                 @test λcjac_meta.metadata_dcreal.finite_flag
+                 @test λcjac_meta.metadata_dcimag.finite_flag
+                 @test λcjac_meta.metadata_dcreal.conditioning_flag in (:good, :warning, :poor)
+                 @test λcjac_meta.metadata_dcimag.conditioning_flag in (:good, :warning, :poor)
+
+            eta_j = [0.0, 0.2]
+            sjac = jacobian_smn(0, 1, 200.0, eta_j; spheroid=:prolate, precision=:double, h=h, adaptive=false)
+            sp = smn(0, 1, 200.0 + h, eta_j; spheroid=:prolate, precision=:double)
+            sm = smn(0, 1, 200.0 - h, eta_j; spheroid=:prolate, precision=:double)
+            sfd_val = (sp.value .- sm.value) ./ (2h)
+            sfd_der = (sp.derivative .- sm.derivative) ./ (2h)
+            assert_allclose(sjac.dvalue_dc, sfd_val; atol=1e-8)
+            assert_allclose(sjac.dderivative_dc, sfd_der; atol=1e-8)
+
+                sjac_meta = jacobian_smn(0, 1, 200.0, eta_j; spheroid=:prolate, precision=:double, h=h, with_metadata=true, adaptive=false)
+                 assert_allclose(sjac_meta.dvalue_dc, sjac.dvalue_dc; atol=1e-8)
+                 assert_allclose(sjac_meta.dderivative_dc, sjac.dderivative_dc; atol=1e-8)
+                 @test sjac_meta.metadata_value.finite_flag
+                 @test sjac_meta.metadata_derivative.finite_flag
+
+            x_j = [1.1, 1.2]
+            rjac = jacobian_rmn(0, 1, 200.0, x_j; spheroid=:prolate, precision=:double, kind=1, h=h, adaptive=false)
+            rp = rmn(0, 1, 200.0 + h, x_j; spheroid=:prolate, precision=:double, kind=1)
+            rm = rmn(0, 1, 200.0 - h, x_j; spheroid=:prolate, precision=:double, kind=1)
+            rfd_val = (rp.value .- rm.value) ./ (2h)
+            rfd_der = (rp.derivative .- rm.derivative) ./ (2h)
+            assert_allclose(real.(rjac.dvalue_dc), real.(rfd_val); atol=1e-8)
+            assert_allclose(imag.(rjac.dvalue_dc), imag.(rfd_val); atol=1e-8)
+            assert_allclose(real.(rjac.dderivative_dc), real.(rfd_der); atol=1e-8)
+            assert_allclose(imag.(rjac.dderivative_dc), imag.(rfd_der); atol=1e-8)
+
+            rjac_meta = jacobian_rmn(0, 1, 200.0, x_j; spheroid=:prolate, precision=:double, kind=1, h=h, with_metadata=true, adaptive=false)
+            assert_allclose(real.(rjac_meta.dvalue_dc), real.(rjac.dvalue_dc); atol=1e-8)
+            assert_allclose(imag.(rjac_meta.dvalue_dc), imag.(rjac.dvalue_dc); atol=1e-8)
+            @test rjac_meta.metadata_value.finite_flag
+            @test rjac_meta.metadata_derivative.finite_flag
         end
     end
 
@@ -208,6 +363,44 @@ using Test
             sqc = smn(0, 2, 0.0 + 0.0im, eta; spheroid=:oblate, precision=:quad)
             assert_allclose(real.(sqc.value), expected_p2; atol=1e-9)
             assert_allclose(imag.(sqc.value), [0.0, 0.0, 0.0]; atol=1e-10)
+
+            @test eigenvalue(0, 2, 0.0; spheroid=:prolate, precision=:quad) == 6.0
+            @test eigenvalue(0, 2, 0.0 + 0.0im; spheroid=:oblate, precision=:quad) == 6.0 + 0.0im
+
+            accq_ang_c0 = accuracy(0, 2, 0.0, eta; spheroid=:prolate, precision=:quad, target=:angular)
+            accq_rad_c0 = accuracy(0, 0, 0.0, [1.2, 1.35]; spheroid=:prolate, precision=:quad, target=:radial, kind=1)
+            @test accq_ang_c0 == fill(30, length(eta))
+            @test accq_rad_c0 == fill(30, 2)
+
+            wq = radial_wronskian(0, 0, 0.0, [1.2, 1.35]; spheroid=:prolate, precision=:quad)
+            wq_expected = ComplexF64.(-1.0 ./ ([1.2, 1.35] .^ 2 .- 1.0))
+            assert_allclose(real.(wq), real.(wq_expected); atol=5e-9)
+            assert_allclose(imag.(wq), imag.(wq_expected); atol=5e-9)
+
+            if has_backend(:double)
+                λd = eigenvalue(0, 1, 200.0; spheroid=:prolate, precision=:double)
+                λq = eigenvalue(0, 1, 200.0; spheroid=:prolate, precision=:quad)
+                @test isapprox(λq, λd; rtol=1e-6, atol=1e-6)
+
+                λcd = eigenvalue(0, 1, 200.0 + 0.1im; spheroid=:oblate, precision=:double)
+                λcq = eigenvalue(0, 1, 200.0 + 0.1im; spheroid=:oblate, precision=:quad)
+                @test isapprox(real(λcq), real(λcd); rtol=1e-6, atol=1e-6)
+                @test isapprox(imag(λcq), imag(λcd); rtol=1e-6, atol=1e-6)
+
+                hq = 1e-6
+                jq = jacobian_eigen(0, 1, 200.0; spheroid=:prolate, precision=:quad, h=hq, adaptive=false)
+                jd = jacobian_eigen(0, 1, 200.0; spheroid=:prolate, precision=:double, h=hq, adaptive=false)
+                @test isapprox(jq, jd; rtol=1e-4, atol=1e-4)
+
+                c_true_q = 80.0
+                λ_target_q = eigenvalue(0, 1, c_true_q; spheroid=:prolate, precision=:quad)
+                root_q = find_c_for_eigenvalue(0, 1, λ_target_q;
+                                               bracket=(60.0, 100.0),
+                                               spheroid=:prolate,
+                                               precision=:quad)
+                @test root_q.converged
+                @test isapprox(root_q.c, c_true_q; atol=1e-6, rtol=1e-8)
+            end
         end
     end
 end

@@ -1,24 +1,26 @@
-using SpheroidalWaveFunctions
+using SpheroidalWaves
 using Test
 
-@testset "SpheroidalWaveFunctions.jl" begin
+@testset "SpheroidalWaves.jl" begin
     assert_allclose(actual, expected; atol=1e-10, rtol=0.0) = begin
         @test length(actual) == length(expected)
         @test all(isapprox.(actual, expected; atol=atol, rtol=rtol))
     end
 
     has_backend(precision::Symbol) = begin
-        lib = SpheroidalWaveFunctions.backend_library(precision=precision)
+        lib = SpheroidalWaves.backend_library(precision=precision)
         lib !== nothing && isfile(lib)
     end
 
     @testset "Public API Surface" begin
-        exported = names(SpheroidalWaveFunctions)
+        exported = names(SpheroidalWaves)
         @test :smn in exported
         @test :rmn in exported
         @test :radial_wronskian in exported
         @test :accuracy in exported
         @test :eigenvalue in exported
+        @test :eigenvalue_sweep in exported
+        @test :eigenvalue_continuation in exported
         @test :jacobian_eigen in exported
         @test :jacobian_smn in exported
         @test :jacobian_rmn in exported
@@ -43,6 +45,51 @@ using Test
         @test_throws ErrorException find_c_for_eigenvalue(0, 0, 1.0; bracket=(0.0, 1.0), rtol=0.0)
         @test_throws ErrorException find_c_for_eigenvalue(0, 0, 1.0; bracket=(0.0, 1.0), maxiter=0)
         @test_throws ErrorException accuracy(0, 0, 1.0, [1.1]; target=:bad)
+        @test_throws ErrorException eigenvalue_sweep(0, 1, Float64[])
+        @test_throws ErrorException eigenvalue_sweep(0, 1, [1.0, 1.0])
+        @test_throws ErrorException eigenvalue_sweep(0, 1, [0.0, 1.0, 0.5])
+        @test_throws ErrorException eigenvalue_sweep(0, 1, [0.0, 1.0]; branch_window=-1)
+    end
+
+    @testset "Eigenvalue Continuation Branch Lock" begin
+        # Synthetic evaluator that swaps n=2 and n=3 branches at c=1.0 only.
+        # The continuation predictor-corrector should stay on the original smooth
+        # curve by locally selecting the best branch candidate.
+        synthetic_eval = function (m, n, c)
+            _ = m
+            base = 100.0 * n + 10.0 * c
+            if isapprox(c, 1.0; atol=0.0, rtol=0.0)
+                if n == 2
+                    return 100.0 * 3 + 10.0 * c
+                elseif n == 3
+                    return 100.0 * 2 + 10.0 * c
+                end
+            end
+            return base
+        end
+
+        cgrid = [0.0, 1.0, 2.0, 3.0]
+        raw = eigenvalue_sweep(0, 2, cgrid;
+                               branch_lock=false,
+                               use_jacobian_predictor=false,
+                               evaluator=synthetic_eval)
+        locked = eigenvalue_sweep(0, 2, cgrid;
+                                  branch_lock=true,
+                                  branch_window=1,
+                                  use_jacobian_predictor=false,
+                                  evaluator=synthetic_eval)
+
+        @test raw.lambda == [200.0, 310.0, 220.0, 230.0]
+        @test locked.lambda == [200.0, 210.0, 220.0, 230.0]
+        @test raw.selected_n == [2, 2, 2, 2]
+        @test locked.selected_n == [2, 3, 2, 2]
+        @test locked.switched_branch == [false, true, true, false]
+
+        @test_logs (:warn,) match_mode=:any eigenvalue_continuation(0, 2, cgrid;
+                                                                     branch_lock=true,
+                                                                     branch_window=1,
+                                                                     use_jacobian_predictor=false,
+                                                                     evaluator=synthetic_eval)
     end
 
     @testset "Double Precision Numerical Paths" begin
@@ -404,3 +451,4 @@ using Test
         end
     end
 end
+

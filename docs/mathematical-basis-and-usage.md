@@ -2,7 +2,7 @@
 
 ## Scope
 
-This document describes the mathematical model behind every public API operation in `SpheroidalWaveFunctions.jl` and shows practical usage patterns.
+This document describes the mathematical model behind every public API operation in `SpheroidalWaves.jl` and shows practical usage patterns.
 
 Public operations covered:
 
@@ -47,7 +47,7 @@ Returned values:
 ### Usage
 
 ```julia
-using SpheroidalWaveFunctions
+using SpheroidalWaves
 
 eta = [-0.5, 0.0, 0.5]
 s = smn(0, 2, 20.0, eta; spheroid=:prolate, precision=:double)
@@ -276,7 +276,7 @@ These identities are used in package tests for baseline correctness checks.
 ## End-to-End Example
 
 ```julia
-using SpheroidalWaveFunctions
+using SpheroidalWaves
 
 m, n = 0, 1
 c = 60.0
@@ -299,3 +299,4 @@ j_r = jacobian_rmn(m, n, c, x; kind=1, with_metadata=true)
 
 - `README.md` for package overview and quick start
 - `docs/fortran-api-user-facing.md` for low-level Fortran argument mapping
+

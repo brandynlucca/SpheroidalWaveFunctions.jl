@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(SpheroidalWaveFunctions Fortran)
+project(SpheroidalWaves Fortran)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_Fortran_STANDARD 2008)
@@ -78,4 +78,5 @@ install(TARGETS spheroidal_batch_r8 spheroidal_batch_r16
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
+
 

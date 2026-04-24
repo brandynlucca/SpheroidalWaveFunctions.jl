@@ -1,10 +1,10 @@
 using Documenter
-using SpheroidalWaveFunctions
+using SpheroidalWaves
 
 makedocs(
-    sitename = "SpheroidalWaveFunctions.jl",
-    modules = [SpheroidalWaveFunctions],
-    authors = "SpheroidalWaveFunctions contributors",
+    sitename = "SpheroidalWaves.jl",
+    modules = [SpheroidalWaves],
+    authors = "SpheroidalWaves contributors",
     format = Documenter.HTML(prettyurls = get(ENV, "CI", "false") == "true"),
     pages = [
         "Home" => "index.md",
@@ -15,6 +15,7 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/brandynlucca/SpheroidalWaveFunctions.jl.git",
+    repo = "github.com/brandynlucca/SpheroidalWaves.jl.git",
     devbranch = "main",
 )
+

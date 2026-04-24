@@ -1,9 +1,9 @@
-module SpheroidalWaveFunctions
+module SpheroidalWaves
 
 using Artifacts
 using Libdl
 
-export smn, rmn, radial_wronskian, accuracy, eigenvalue, jacobian_eigen, jacobian_smn, jacobian_rmn, find_c_for_eigenvalue
+export smn, rmn, radial_wronskian, accuracy, eigenvalue, eigenvalue_sweep, eigenvalue_continuation, jacobian_eigen, jacobian_smn, jacobian_rmn, find_c_for_eigenvalue
 
 const _backend_libraries = Dict{Symbol,Union{Nothing,String}}(
     :double => nothing,
@@ -12,8 +12,8 @@ const _backend_libraries = Dict{Symbol,Union{Nothing,String}}(
 
 const _backend_handles = Dict{String,Ptr{Cvoid}}()
 
-const _ENV_BACKEND_R8 = "SPHEROIDALWAVEFUNCTIONS_LIBRARY_R8"
-const _ENV_BACKEND_R16 = "SPHEROIDALWAVEFUNCTIONS_LIBRARY_R16"
+const _ENV_BACKEND_R8 = "SPHEROIDALWAVES_LIBRARY_R8"
+const _ENV_BACKEND_R16 = "SPHEROIDALWAVES_LIBRARY_R16"
 const _ARTIFACT_R8 = "spheroidal_backend_r8"
 const _ARTIFACT_R16 = "spheroidal_backend_r16"
 
@@ -140,10 +140,10 @@ function _require_backend_library(precision::Symbol)
         
         To resolve this, try one of:
         1. Ensure artifacts are available (they should download automatically on first use).
-        2. Set environment variable: SPHEROIDALWAVEFUNCTIONS_LIBRARY_R$(precision === :double ? "8" : "16") = /path/to/lib
-        3. Run: julia> import Pkg; Pkg.build("SpheroidalWaveFunctions")
+        2. Set environment variable: SPHEROIDALWAVES_LIBRARY_R$(precision === :double ? "8" : "16") = /path/to/lib
+        3. Run: julia> import Pkg; Pkg.build("SpheroidalWaves")
         
-        See https://github.com/Brandyn/SpheroidalWaveFunctions.jl/docs/src/backend-overrides.md for details.
+        See https://github.com/Brandyn/SpheroidalWaves.jl/docs/src/backend-overrides.md for details.
         """)
     end
     return lib
@@ -985,6 +985,8 @@ function eigenvalue(m::Integer, n::Integer, c::Union{Real,Complex};
     end
 end
 
+include("eigenvalue_sweep.jl")
+
 """
     Numerical Jacobian of `eigenvalue` with respect to `c`.
 
@@ -1488,3 +1490,4 @@ function __init__()
 end
 
 end
+

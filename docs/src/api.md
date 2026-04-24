@@ -15,6 +15,7 @@ rmn
 
 ```@docs
 eigenvalue
+eigenvalue_sweep
 accuracy
 radial_wronskian
 ```

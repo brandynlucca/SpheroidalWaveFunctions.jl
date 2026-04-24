@@ -19,22 +19,22 @@ At runtime, explicit API calls always take precedence over automatic initializat
 
 Set one or both variables before starting Julia:
 
-- `SPHEROIDALWAVEFUNCTIONS_LIBRARY_R8` for double precision backend
-- `SPHEROIDALWAVEFUNCTIONS_LIBRARY_R16` for quad precision backend
+- `SPHEROIDALWAVES_LIBRARY_R8` for double precision backend
+- `SPHEROIDALWAVES_LIBRARY_R16` for quad precision backend
 
 Windows PowerShell example:
 
 ```powershell
-$env:SPHEROIDALWAVEFUNCTIONS_LIBRARY_R8 = "C:\path\to\spheroidal_batch_r8.dll"
-$env:SPHEROIDALWAVEFUNCTIONS_LIBRARY_R16 = "C:\path\to\spheroidal_batch_r16.dll"
+$env:SPHEROIDALWAVES_LIBRARY_R8 = "C:\path\to\spheroidal_batch_r8.dll"
+$env:SPHEROIDALWAVES_LIBRARY_R16 = "C:\path\to\spheroidal_batch_r16.dll"
 julia
 ```
 
 Linux/macOS shell example:
 
 ```bash
-export SPHEROIDALWAVEFUNCTIONS_LIBRARY_R8="/path/to/libspheroidal_batch_r8.so"
-export SPHEROIDALWAVEFUNCTIONS_LIBRARY_R16="/path/to/libspheroidal_batch_r16.so"
+export SPHEROIDALWAVES_LIBRARY_R8="/path/to/libspheroidal_batch_r8.so"
+export SPHEROIDALWAVES_LIBRARY_R16="/path/to/libspheroidal_batch_r16.so"
 julia
 ```
 
@@ -43,7 +43,7 @@ julia
 Use explicit runtime configuration when paths are known inside application code:
 
 ```julia
-using SpheroidalWaveFunctions
+using SpheroidalWaves
 
 set_backend_library!("/path/to/libspheroidal_batch_r8.so"; precision=:double)
 set_backend_library!("/path/to/libspheroidal_batch_r16.so"; precision=:quad)
@@ -63,3 +63,4 @@ backend_library(precision=:quad)
 - `deps/library_config.jl` is generated locally by build tooling and is intentionally gitignored.
 - If a configured path does not exist, it is ignored and a warning is emitted.
 - If no backend is configured for a requested precision, calls fail with a clear error message.
+

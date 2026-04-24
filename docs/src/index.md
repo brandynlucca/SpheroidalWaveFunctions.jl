@@ -1,6 +1,6 @@
-# SpheroidalWaveFunctions.jl
+# SpheroidalWaves.jl
 
-SpheroidalWaveFunctions.jl provides fast Julia bindings to native Fortran kernels for spheroidal wave computations.
+SpheroidalWaves.jl provides fast Julia bindings to native Fortran kernels for spheroidal wave computations.
 
 ## Public API
 
@@ -17,7 +17,7 @@ SpheroidalWaveFunctions.jl provides fast Julia bindings to native Fortran kernel
 ## Quick Start
 
 ```julia
-using SpheroidalWaveFunctions
+using SpheroidalWaves
 
 eta = [-0.5, 0.0, 0.5]
 x = [1.1, 1.2]
@@ -34,3 +34,4 @@ root = find_c_for_eigenvalue(0, 1, lambda; bracket=(1.0, 40.0))
 ```
 
 See the `API` page for signatures and docstrings, and `Math and Usage` for equations and conventions.
+

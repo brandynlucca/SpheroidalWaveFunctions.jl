@@ -1,4 +1,4 @@
-# SpheroidalWaveFunctions Build System
+# SpheroidalWaves Build System
 
 This document describes the build process for compiling the Fortran batch kernels into a shared library for Julia use.
 
@@ -18,7 +18,7 @@ deps/
   └── library_config.jl             # Generated at build time (library path config)
 
 src/
-  └── SpheroidalWaveFunctions.jl     # Julia FFI layer (ccall wrappers)
+  └── SpheroidalWaves.jl     # Julia FFI layer (ccall wrappers)
 
 CMakeLists.txt                      # Cross-platform build configuration
 
@@ -33,7 +33,7 @@ build/                              # Build artifacts (generated)
 The package exposes **two entry points** that intelligently dispatch to the appropriate Fortran solver:
 
 ```julia
-using SpheroidalWaveFunctions
+using SpheroidalWaves
 
 # Angular functions
 vals = smn(m, n, c, η; spheroid=:prolate, precision=:double, normalize=false)
@@ -102,7 +102,7 @@ The current build system compiles with **double precision (knd=8)** by default. 
   - **Linux**: `apt-get install gfortran` (or equivalent)
 
 ### 3. Julia 1.10+
-- SpheroidalWaveFunctions requires Julia 1.10 or later
+- SpheroidalWaves requires Julia 1.10 or later
 
 ## Build Methods
 
@@ -111,13 +111,13 @@ The current build system compiles with **double precision (knd=8)** by default. 
 When you install the package using Julia's package manager, the build script runs automatically:
 
 ```julia
-julia> import Pkg; Pkg.add("SpheroidalWaveFunctions")
+julia> import Pkg; Pkg.add("SpheroidalWaves")
 ```
 
 Or if you have a local development copy:
 
 ```julia
-julia> import Pkg; Pkg.develop("path/to/SpheroidalWaveFunctions")
+julia> import Pkg; Pkg.develop("path/to/SpheroidalWaves")
 ```
 
 The build process will:
@@ -130,14 +130,14 @@ The build process will:
 
 **Expected output**:
 ```
-[SpheroidalWaveFunctions.jl] SpheroidalWaveFunctions Fortran batch build starting...
-[SpheroidalWaveFunctions.jl] Found CMake: /usr/bin/cmake
-[SpheroidalWaveFunctions.jl] Found Fortran compiler: /usr/bin/gfortran (using gfortran)
-[SpheroidalWaveFunctions.jl] All 8 source files verified.
-[SpheroidalWaveFunctions.jl] Running CMake configure...
-[SpheroidalWaveFunctions.jl] Running CMake build...
-[SpheroidalWaveFunctions.jl] Library verified: .../build/lib/libspheroidal_batch.so
-[SpheroidalWaveFunctions.jl] Build successful!
+[SpheroidalWaves.jl] SpheroidalWaves Fortran batch build starting...
+[SpheroidalWaves.jl] Found CMake: /usr/bin/cmake
+[SpheroidalWaves.jl] Found Fortran compiler: /usr/bin/gfortran (using gfortran)
+[SpheroidalWaves.jl] All 8 source files verified.
+[SpheroidalWaves.jl] Running CMake configure...
+[SpheroidalWaves.jl] Running CMake build...
+[SpheroidalWaves.jl] Library verified: .../build/lib/libspheroidal_batch.so
+[SpheroidalWaves.jl] Build successful!
 ```
 
 ### Method 2: Manual CMake Build
@@ -146,7 +146,7 @@ If you want to build manually or customize compiler flags:
 
 ```bash
 # Navigate to package root
-cd /path/to/SpheroidalWaveFunctions
+cd /path/to/SpheroidalWaves
 
 # Create build directory
 mkdir -p build && cd build
@@ -165,13 +165,13 @@ cmake --build . --config Release
 If you modify Fortran source files and need to rebuild:
 
 ```julia
-julia> import Pkg; Pkg.build("SpheroidalWaveFunctions")
+julia> import Pkg; Pkg.build("SpheroidalWaves")
 ```
 
 Or:
 
 ```bash
-cd /path/to/SpheroidalWaveFunctions
+cd /path/to/SpheroidalWaves
 rm -rf build
 # Then re-run Method 2
 ```
@@ -188,7 +188,7 @@ The build system supports two precision backends:
 **Using Julia package build**:
 ```julia
 julia> ENV["FORTRAN_PRECISION"] = "16"
-julia> import Pkg; Pkg.build("SpheroidalWaveFunctions")
+julia> import Pkg; Pkg.build("SpheroidalWaves")
 ```
 
 **Using CMake directly**:
@@ -257,14 +257,14 @@ cmake .. -DFORTRAN_PRECISION=16
 ### "Library loads but function call fails"
 - Verify library path:
   ```julia
-  julia> using SpheroidalWaveFunctions
-  julia> SpheroidalWaveFunctions.backend_library()
+  julia> using SpheroidalWaves
+  julia> SpheroidalWaves.backend_library()
   ```
 - Should show path like `/path/to/build/lib/libspheroidal_batch.so`
-- If empty, rebuild: `Pkg.build("SpheroidalWaveFunctions")`
+- If empty, rebuild: `Pkg.build("SpheroidalWaves")`
 - Or manually set:
   ```julia
-  julia> SpheroidalWaveFunctions.set_backend_library!("/path/to/build/lib/libspheroidal_batch.so")
+  julia> SpheroidalWaves.set_backend_library!("/path/to/build/lib/libspheroidal_batch.so")
   ```
 
 ### "Error calling Fortran function"
@@ -278,12 +278,12 @@ After build, Julia discovers the library via:
 
 1. **Automatic (via `library_config.jl`)**:
    - File created by build script at `deps/library_config.jl`
-   - Loaded at module initialization (`__init__()` in `src/SpheroidalWaveFunctions.jl`)
+   - Loaded at module initialization (`__init__()` in `src/SpheroidalWaves.jl`)
    - Path automatically set via `set_backend_library!(path)`
 
 2. **Manual override**:
    ```julia
-   julia> using SpheroidalWaveFunctions
+   julia> using SpheroidalWaves
    julia> set_backend_library!("/custom/path/to/libspheroidal_batch.so")
    julia> prolate_smn_batch(1, 2, 1.0, [1.0])  # Now uses custom library
    ```
@@ -308,7 +308,7 @@ build/
 │   └── libspheroidal_batch.dylib (macOS)
 ├── CMakeFiles/
 ├── CMakeCache.txt
-├── SpheroidalWaveFunctions.cmake
+├── SpheroidalWaves.cmake
 └── cmake_install.cmake
 ```
 
@@ -340,7 +340,7 @@ build/
 
 2. **Test build**:
    ```bash
-   cd /path/to/SpheroidalWaveFunctions
+   cd /path/to/SpheroidalWaves
    rm -rf build
    mkdir build && cd build
    cmake ..
@@ -360,19 +360,19 @@ build/
 
 1. **Install**:
    ```julia
-   julia> import Pkg; Pkg.add("SpheroidalWaveFunctions")
+   julia> import Pkg; Pkg.add("SpheroidalWaves")
    ```
 
 2. **Use**:
    ```julia
-   julia> using SpheroidalWaveFunctions
+   julia> using SpheroidalWaves
    julia> vals = prolate_smn_batch(1, 2, 1.5, [0.5, 0.6, 0.7])
    julia> vals.value  # Batch results
    ```
 
 3. **Rebuild if needed**:
    ```julia
-   julia> Pkg.build("SpheroidalWaveFunctions")
+   julia> Pkg.build("SpheroidalWaves")
    ```
 
 ## Cross-Platform Compatibility
@@ -396,3 +396,4 @@ All platforms produce compatible `.so`/`.dll`/`.dylib` files with same ABI.
 ## Questions or Issues?
 
 See [README.md](README.md) for contact information and issue tracking.
+

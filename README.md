@@ -1,7 +1,7 @@
-# SpheroidalWaveFunctions.jl
+# SpheroidalWaves.jl
 
-[![Build Status](https://github.com/brandynlucca/SpheroidalWaveFunctions.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/brandynlucca/SpheroidalWaveFunctions.jl/actions/workflows/CI.yml?query=branch%3Amain)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/brandynlucca/SpheroidalWaveFunctions.jl/blob/main/LICENSE)
+[![Build Status](https://github.com/brandynlucca/SpheroidalWaves.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/brandynlucca/SpheroidalWaves.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/brandynlucca/SpheroidalWaves.jl/blob/main/LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19728040.svg)](https://doi.org/10.5281/zenodo.19728040)
 
 Fast, vectorized computation of spheroidal wave functions with native Fortran kernels.
@@ -20,7 +20,7 @@ This Julia package adds batch-oriented wrappers, C-ABI interfaces, precision rou
 
 ## Overview
 
-SpheroidalWaveFunctions.jl provides high-performance Julia bindings to batch-vectorized Fortran implementations of spheroidal wave function solvers. The package supports:
+SpheroidalWaves.jl provides high-performance Julia bindings to batch-vectorized Fortran implementations of spheroidal wave function solvers. The package supports:
 
 - **Prolate spheroidal wave functions** (real and complex)
 - **Oblate spheroidal wave functions** (real and complex)
@@ -87,7 +87,7 @@ Speedup: **100x** for batch operations.
 
 ```julia
 julia> import Pkg
-julia> Pkg.add("SpheroidalWaveFunctions")
+julia> Pkg.add("SpheroidalWaves")
 ```
 
 Runtime backend selection is artifact-first. If matching artifacts are available, users can run without local compiler setup.
@@ -121,7 +121,7 @@ Or use the manual GitHub workflow:
 ## Quick Start
 
 ```julia
-using SpheroidalWaveFunctions
+using SpheroidalWaves
 
 # Angular function (real prolate, double precision)
 vals = smn(1, 2, 1.5, [0.5, 0.6, 0.7])
@@ -217,7 +217,7 @@ The default library is built with double-precision (knd=8) base solvers. To enab
 1. **Modify the base solver modules** to compile with `knd=16`
 2. **Recompile the library**:
    ```bash
-   cd /path/to/SpheroidalWaveFunctions
+   cd /path/to/SpheroidalWaves
    rm -rf build && mkdir build && cd build
    # Special build flag or environment modification for knd=16 (future)
    cmake ..
@@ -225,7 +225,7 @@ The default library is built with double-precision (knd=8) base solvers. To enab
    ```
 3. **Rebuild Julia package**:
    ```julia
-   julia> import Pkg; Pkg.build("SpheroidalWaveFunctions")
+   julia> import Pkg; Pkg.build("SpheroidalWaves")
    ```
 
 **Status**: Quad-precision support is in development. Currently, only double precision is available. The API is ready for both precisions; the backend needs to support simultaneous compilation of both `knd=8` and `knd=16` solvers.
@@ -237,7 +237,7 @@ Fortran Batch Kernels (deps/)
           ↓
 Shared Library (build/lib/*.so|.dll|.dylib)
           ↓
-Julia FFI Layer (src/SpheroidalWaveFunctions.jl)
+Julia FFI Layer (src/SpheroidalWaves.jl)
           ↓
 User API (prolate_smn_batch, etc.)
 ```
@@ -255,12 +255,12 @@ User API (prolate_smn_batch, etc.)
 
 ### Library Not Found
 ```julia
-julia> using SpheroidalWaveFunctions
-julia> SpheroidalWaveFunctions.backend_library()  # Should show path
+julia> using SpheroidalWaves
+julia> SpheroidalWaves.backend_library()  # Should show path
 ```
 If empty, rebuild:
 ```julia
-julia> import Pkg; Pkg.build("SpheroidalWaveFunctions")
+julia> import Pkg; Pkg.build("SpheroidalWaves")
 ```
 
 ### Function Call Fails
@@ -300,16 +300,16 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## Citation
 
-If you use SpheroidalWaveFunctions.jl in research, please cite:
+If you use SpheroidalWaves.jl in research, please cite:
 
 ```bibtex
 @software{lucca2026spheroidal,
   author = {Lucca, Brandyn},
-  title = {SpheroidalWaveFunctions.jl: Fast Vectorized Spheroidal Wave Function Computation},
+  title = {SpheroidalWaves.jl: Fast Vectorized Spheroidal Wave Function Computation},
   year = {2026},
   version = {0.2.0},
   doi = {10.5281/zenodo.19728040},
-  url = {https://github.com/brandynlucca/SpheroidalWaveFunctions.jl}
+  url = {https://github.com/brandynlucca/SpheroidalWaves.jl}
 }
 ```
 
@@ -321,8 +321,9 @@ If you use SpheroidalWaveFunctions.jl in research, please cite:
 
 ## Contact
 
-For questions or issues, please open an issue on [GitHub](https://github.com/Brandyn/SpheroidalWaveFunctions.jl/issues).
+For questions or issues, please open an issue on [GitHub](https://github.com/Brandyn/SpheroidalWaves.jl/issues).
 
 ---
 
 **Status**: Alpha (API may change). Build system under development. Pre-compiled binaries coming soon.
+

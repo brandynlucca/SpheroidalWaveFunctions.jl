@@ -107,4 +107,5 @@ root = find_c_for_eigenvalue(0, 1, lambda_target;
 
 ## Full Reference
 
-For the complete long-form theory-and-usage narrative, see [docs/mathematical-basis-and-usage.md](https://github.com/brandynlucca/SpheroidalWaveFunctions.jl/blob/main/docs/mathematical-basis-and-usage.md) in the repository.
+For the complete long-form theory-and-usage narrative, see [docs/mathematical-basis-and-usage.md](https://github.com/brandynlucca/SpheroidalWaves.jl/blob/main/docs/mathematical-basis-and-usage.md) in the repository.
+

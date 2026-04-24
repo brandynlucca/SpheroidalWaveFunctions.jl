@@ -28,15 +28,15 @@ end
 # Helper Functions
 # ============================================================================
 function info_msg(msg)
-    println("[SpheroidalWaveFunctions.jl] $msg")
+    println("[SpheroidalWaves.jl] $msg")
 end
 
 function error_msg(msg)
-    println("[SpheroidalWaveFunctions.jl ERROR] $msg")
+    println("[SpheroidalWaves.jl ERROR] $msg")
 end
 
 function warn_msg(msg)
-    println("[SpheroidalWaveFunctions.jl WARNING] $msg")
+    println("[SpheroidalWaves.jl WARNING] $msg")
 end
 
 function _compiler_target(path::String)
@@ -332,7 +332,7 @@ function configure_library_paths()
 
     config_script = """
     # Auto-generated: library path configuration
-    # Set on package load in src/SpheroidalWaveFunctions.jl
+    # Set on package load in src/SpheroidalWaves.jl
 
     const SPHEROIDAL_BATCH_LIBRARY_R8 = "$lib_r8"
     const SPHEROIDAL_BATCH_LIBRARY_R16 = "$lib_r16"
@@ -351,7 +351,7 @@ end
 # Main Build Workflow
 # ============================================================================
 function main()
-    info_msg("SpheroidalWaveFunctions Fortran batch build starting...")
+    info_msg("SpheroidalWaves Fortran batch build starting...")
     info_msg("Building dual precision backends (r8 and r16)")
     info_msg("Build directory: $BUILD_DIR")
     
@@ -387,7 +387,7 @@ function main()
     info_msg("")
     info_msg("Next steps:")
     info_msg("  1. Library is ready at: $(detect_library_dir())")
-    info_msg("  2. Use SpheroidalWaveFunctions module in Julia")
+    info_msg("  2. Use SpheroidalWaves module in Julia")
     info_msg("  3. Call smn/rmn with precision=:double or precision=:quad")
     info_msg("")
     
@@ -407,7 +407,7 @@ if !main()
         warn_msg("  - You don't have a Fortran compiler installed")
         warn_msg("  - CMake is not available")
         warn_msg("")
-        warn_msg("You can still use SpheroidalWaveFunctions if:")
+        warn_msg("You can still use SpheroidalWaves if:")
         warn_msg("  1. Pre-built artifacts are available (automatic download)")
         warn_msg("  2. You set environment variables with backend paths")
         warn_msg("  3. You install a Fortran compiler and rebuild")
@@ -417,6 +417,7 @@ if !main()
         warn_msg("  - macOS: brew install gcc cmake")
         warn_msg("  - Windows: install MinGW-w64 (gfortran) and CMake")
         warn_msg("")
-        warn_msg("Then rebuild with: julia> import Pkg; Pkg.build(\"SpheroidalWaveFunctions\")")
+        warn_msg("Then rebuild with: julia> import Pkg; Pkg.build(\"SpheroidalWaves\")")
     end
 end
+

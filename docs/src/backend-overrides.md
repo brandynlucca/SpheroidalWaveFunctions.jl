@@ -6,8 +6,9 @@ This page describes how backend library paths are selected and how users can ove
 
 At module initialization, backend libraries are resolved in this order:
 
-1. Environment variables (preferred override path)
-2. Local generated config file `deps/library_config.jl` (fallback)
+1. Package artifacts from `Artifacts.toml` (default user path)
+2. Environment variables
+3. Local generated config file `deps/library_config.jl` (developer fallback)
 
 At runtime, explicit API calls always take precedence over automatic initialization:
 
@@ -57,6 +58,7 @@ backend_library(precision=:quad)
 
 ## Notes
 
+- Artifact entries must be populated for true out-of-box backend loading on fresh systems.
 - `deps/library_config.jl` is generated locally by build tooling and is intentionally gitignored.
 - If a configured path does not exist, it is ignored and a warning is emitted.
 - If no backend is configured for a requested precision, calls fail with a clear error message.

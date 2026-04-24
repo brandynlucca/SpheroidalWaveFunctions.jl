@@ -1,5 +1,6 @@
 module SpheroidalWaveFunctions
 
+using Artifacts
 using Libdl
 
 export smn, rmn, radial_wronskian, accuracy, eigenvalue, jacobian_eigen, jacobian_smn, jacobian_rmn, find_c_for_eigenvalue
@@ -13,6 +14,8 @@ const _backend_handles = Dict{String,Ptr{Cvoid}}()
 
 const _ENV_BACKEND_R8 = "SPHEROIDALWAVEFUNCTIONS_LIBRARY_R8"
 const _ENV_BACKEND_R16 = "SPHEROIDALWAVEFUNCTIONS_LIBRARY_R16"
+const _ARTIFACT_R8 = "spheroidal_backend_r8"
+const _ARTIFACT_R16 = "spheroidal_backend_r16"
 
 function _validate_precision(precision::Symbol)
     if precision != :double && precision != :quad
@@ -54,6 +57,49 @@ function _configure_backends_from_env!()
     if haskey(ENV, _ENV_BACKEND_R16)
         configured_any |= _set_backend_from_candidate(ENV[_ENV_BACKEND_R16], :quad, "ENV[$_ENV_BACKEND_R16]")
     end
+    return configured_any
+end
+
+function _backend_filename(stem::AbstractString)
+    if Sys.iswindows()
+        return "$stem.dll"
+    elseif Sys.isapple()
+        return "lib$stem.dylib"
+    else
+        return "lib$stem.so"
+    end
+end
+
+function _configure_one_backend_from_artifact!(artifact_name::String, precision::Symbol)
+    artifacts_toml = joinpath(dirname(@__FILE__), "..", "Artifacts.toml")
+    if !isfile(artifacts_toml)
+        return false
+    end
+    hash = Artifacts.artifact_hash(artifact_name, artifacts_toml)
+    if hash === nothing
+        return false
+    end
+
+    root = Artifacts.artifact_path(hash)
+    libname = precision === :double ? _backend_filename("spheroidal_batch_r8") : _backend_filename("spheroidal_batch_r16")
+    candidates = [
+        joinpath(root, libname),
+        joinpath(root, "lib", libname),
+        joinpath(root, "bin", libname),
+    ]
+
+    for path in candidates
+        if _set_backend_from_candidate(path, precision, "artifact $artifact_name")
+            return true
+        end
+    end
+    return false
+end
+
+function _configure_backends_from_artifacts!()
+    configured_any = false
+    configured_any |= _configure_one_backend_from_artifact!(_ARTIFACT_R8, :double)
+    configured_any |= _configure_one_backend_from_artifact!(_ARTIFACT_R16, :quad)
     return configured_any
 end
 
@@ -1412,10 +1458,12 @@ end
 
 function __init__()
     try
-        # User/CI env vars are the primary non-code override path.
+        # Default path for end users: shipped artifacts.
+        configured_from_artifacts = _configure_backends_from_artifacts!()
+        # Overrides for CI/power users.
         configured_from_env = _configure_backends_from_env!()
-        # Local generated config remains a fallback for developer workflows.
-        if !configured_from_env
+        # Local generated config remains a final fallback for developer workflows.
+        if !(configured_from_artifacts || configured_from_env)
             _configure_backends_from_local_config!()
         end
     catch e

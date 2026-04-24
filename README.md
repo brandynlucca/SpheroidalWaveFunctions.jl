@@ -89,15 +89,31 @@ julia> import Pkg
 julia> Pkg.add("SpheroidalWaveFunctions")
 ```
 
-During installation, the build script will:
+Runtime backend selection is artifact-first. If matching artifacts are available, users can run without local compiler setup.
+
+If artifacts are unavailable for the platform, the build script fallback will:
 1. Detect your system and Fortran compiler
 2. Compile Fortran batch kernels
-3. Create a shared library
-4. Register it for Julia to use
+3. Create shared libraries
+4. Register local paths for Julia to use
 
-**Prerequisites**: CMake 3.15+, Fortran compiler (gfortran or Intel Fortran)
+**Build fallback prerequisites**: CMake 3.15+, Fortran compiler (gfortran or Intel Fortran)
 
 See [BUILD.md](BUILD.md) for detailed build instructions and troubleshooting.
+
+### Maintainer: Update Artifact Bindings
+
+When new backend binaries are published, update `Artifacts.toml` with:
+
+```julia
+julia scripts/update_artifacts.jl Artifacts.toml \
+   <r8_url> <r8_sha256> <r8_git_tree_sha1> \
+   <r16_url> <r16_sha256> <r16_git_tree_sha1>
+```
+
+Or use the manual GitHub workflow:
+
+- `.github/workflows/UpdateArtifacts.yml`
 
 ## Quick Start
 

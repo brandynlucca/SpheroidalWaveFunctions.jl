@@ -420,4 +420,3 @@ if !main()
         warn_msg("Then rebuild with: julia> import Pkg; Pkg.build(\"SpheroidalWaveFunctions\")")
     end
 end
-end

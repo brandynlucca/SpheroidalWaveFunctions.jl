@@ -33,4 +33,5 @@ jobs:
       - name: Build and deploy
         run: julia --color=yes --project=docs docs/make.jl
         env:
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

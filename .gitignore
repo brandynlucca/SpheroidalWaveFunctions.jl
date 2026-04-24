@@ -5,6 +5,8 @@ CMakeFiles/
 cmake_install.cmake
 Makefile
 *.cmake
+fort.*
+tmp_*
 
 # Generated library configuration
 deps/library_config.jl
@@ -27,4 +29,7 @@ deps/library_config.jl
 
 # Julia
 Manifest.toml
+
+# Documenter output
+docs/build/
 

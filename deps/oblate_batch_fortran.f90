@@ -44,6 +44,7 @@ contains
     real(c_double), allocatable :: s1c(:,:), s1dc(:,:)
     integer(c_int), allocatable :: ir1e(:), ir1de(:), ir2e(:), ir2de(:), naccr(:)
     integer(c_int), allocatable :: is1e(:,:), is1de(:,:), naccs(:,:)
+    real(c_double), allocatable :: eigout(:)
 
     status = 0
     if (n_eta < 1_c_int) then
@@ -82,10 +83,11 @@ contains
     allocate(ir1e(lnum), ir1de(lnum), ir2e(lnum), ir2de(lnum), naccr(lnum))
     allocate(s1c(lnum, narg), s1dc(lnum, narg))
     allocate(is1e(lnum, narg), is1de(lnum, narg), naccs(lnum, narg))
+    allocate(eigout(lnum))
 
     call oblfcn(c, m, lnum, ioprad, x, iopang, iopnorm, narg, arg, &
                 r1c, ir1e, r1dc, ir1de, r2c, ir2e, r2dc, ir2de, naccr, &
-                s1c, is1e, s1dc, is1de, naccs)
+                s1c, is1e, s1dc, is1de, naccs, eigout)
 
     do i = 1, n_eta
       value(i) = s1c(idx0, i) * pow10_i(is1e(idx0, i))
@@ -109,6 +111,7 @@ contains
     real(c_double), allocatable :: s1c(:,:), s1dc(:,:)
     integer(c_int), allocatable :: ir1e(:), ir1de(:), ir2e(:), ir2de(:), naccr(:)
     integer(c_int), allocatable :: is1e(:,:), is1de(:,:), naccs(:,:)
+    real(c_double), allocatable :: eigout(:)
 
     narg = 1_c_int
     iopang = 0_c_int
@@ -150,6 +153,7 @@ contains
     allocate(ir1e(lnum), ir1de(lnum), ir2e(lnum), ir2de(lnum), naccr(lnum))
     allocate(s1c(lnum, 1), s1dc(lnum, 1))
     allocate(is1e(lnum, 1), is1de(lnum, 1), naccs(lnum, 1))
+    allocate(eigout(lnum))
 
     do i = 1, n_x
       if (.not. is_finite_r8(xvec(i)) .or. xvec(i) < 0.0_rk) then
@@ -162,7 +166,7 @@ contains
       ioprad = 1_c_int
       call oblfcn(c, m, lnum, ioprad, x, iopang, iopnorm, narg, arg, &
                   r1c, ir1e, r1dc, ir1de, r2c, ir2e, r2dc, ir2de, naccr, &
-                  s1c, is1e, s1dc, is1de, naccs)
+                  s1c, is1e, s1dc, is1de, naccs, eigout)
       r1v = r1c(idx0) * pow10_i(ir1e(idx0))
       r1d = r1dc(idx0) * pow10_i(ir1de(idx0))
 
@@ -170,7 +174,7 @@ contains
         ioprad = 2_c_int
         call oblfcn(c, m, lnum, ioprad, x, iopang, iopnorm, narg, arg, &
                     r1c, ir1e, r1dc, ir1de, r2c, ir2e, r2dc, ir2de, naccr, &
-                    s1c, is1e, s1dc, is1de, naccs)
+                    s1c, is1e, s1dc, is1de, naccs, eigout)
         r2v = r2c(idx0) * pow10_i(ir2e(idx0))
         r2d = r2dc(idx0) * pow10_i(ir2de(idx0))
       else
@@ -215,6 +219,7 @@ contains
     real(c_double), allocatable :: s1c(:,:), s1dc(:,:)
     integer(c_int), allocatable :: ir1e(:), ir1de(:), ir2e(:), ir2de(:), naccr(:)
     integer(c_int), allocatable :: is1e(:,:), is1de(:,:), naccs_tmp(:,:)
+    real(c_double), allocatable :: eigout(:)
 
     status = 0
     if (n_eta < 1_c_int) then
@@ -253,10 +258,11 @@ contains
     allocate(ir1e(lnum), ir1de(lnum), ir2e(lnum), ir2de(lnum), naccr(lnum))
     allocate(s1c(lnum, narg), s1dc(lnum, narg))
     allocate(is1e(lnum, narg), is1de(lnum, narg), naccs_tmp(lnum, narg))
+    allocate(eigout(lnum))
 
     call oblfcn(c, m, lnum, ioprad, x, iopang, iopnorm, narg, arg, &
                 r1c, ir1e, r1dc, ir1de, r2c, ir2e, r2dc, ir2de, naccr, &
-                s1c, is1e, s1dc, is1de, naccs_tmp)
+                s1c, is1e, s1dc, is1de, naccs_tmp, eigout)
 
     do i = 1, n_eta
       value(i) = s1c(idx0, i) * pow10_i(is1e(idx0, i))
@@ -281,6 +287,7 @@ contains
     real(c_double), allocatable :: s1c(:,:), s1dc(:,:)
     integer(c_int), allocatable :: ir1e(:), ir1de(:), ir2e(:), ir2de(:), naccr(:)
     integer(c_int), allocatable :: is1e(:,:), is1de(:,:), naccs(:,:)
+    real(c_double), allocatable :: eigout(:)
 
     real(c_double) :: r1v, r1d, r2v, r2d
 
@@ -324,6 +331,7 @@ contains
     allocate(ir1e(lnum), ir1de(lnum), ir2e(lnum), ir2de(lnum), naccr(lnum))
     allocate(s1c(lnum, 1), s1dc(lnum, 1))
     allocate(is1e(lnum, 1), is1de(lnum, 1), naccs(lnum, 1))
+    allocate(eigout(lnum))
 
     do i = 1, n_x
       if (.not. is_finite_r8(xvec(i)) .or. xvec(i) < 0.0_rk) then
@@ -336,7 +344,7 @@ contains
       ioprad = 1_c_int
       call oblfcn(c, m, lnum, ioprad, x, iopang, iopnorm, 1_c_int, arg, &
                   r1c, ir1e, r1dc, ir1de, r2c, ir2e, r2dc, ir2de, naccr, &
-                  s1c, is1e, s1dc, is1de, naccs)
+                  s1c, is1e, s1dc, is1de, naccs, eigout)
       r1v = r1c(idx0) * pow10_i(ir1e(idx0))
       r1d = r1dc(idx0) * pow10_i(ir1de(idx0))
 
@@ -344,7 +352,7 @@ contains
         ioprad = 2_c_int
         call oblfcn(c, m, lnum, ioprad, x, iopang, iopnorm, 1_c_int, arg, &
                     r1c, ir1e, r1dc, ir1de, r2c, ir2e, r2dc, ir2de, naccr, &
-                    s1c, is1e, s1dc, is1de, naccs)
+                    s1c, is1e, s1dc, is1de, naccs, eigout)
         r2v = r2c(idx0) * pow10_i(ir2e(idx0))
         r2d = r2dc(idx0) * pow10_i(ir2de(idx0))
       end if
@@ -375,5 +383,52 @@ contains
       end select
     end do
   end subroutine oblate_rmn_batch_r8_acc
+
+  subroutine oblate_eigenvalue_r8(m, n, c, eig, status) bind(C, name="oblate_eigenvalue_r8")
+    integer(c_int), value, intent(in) :: m, n
+    real(c_double), value, intent(in) :: c
+    real(c_double), intent(out) :: eig
+    integer(c_int), intent(out) :: status
+
+    integer(c_int) :: lnum, idx0, ioprad, iopang, iopnorm, narg
+    real(c_double) :: x
+    real(c_double), allocatable :: arg(:)
+    real(c_double), allocatable :: r1c(:), r1dc(:), r2c(:), r2dc(:), eigout(:)
+    real(c_double), allocatable :: s1c(:,:), s1dc(:,:)
+    integer(c_int), allocatable :: ir1e(:), ir1de(:), ir2e(:), ir2de(:), naccr(:)
+    integer(c_int), allocatable :: is1e(:,:), is1de(:,:), naccs(:,:)
+
+    status = 0_c_int
+    eig = 0.0_rk
+    if (n < 0_c_int) then
+      status = -1_c_int
+      return
+    end if
+    if (n < m) then
+      status = -2_c_int
+      return
+    end if
+
+    lnum = solver_lnum(c, n - m + 1_c_int)
+    idx0 = n - m + 1_c_int
+    narg = 1_c_int
+    ioprad = 0_c_int
+    iopang = 0_c_int
+    iopnorm = 0_c_int
+    x = 10.0_rk
+
+    allocate(arg(1))
+    arg(1) = 0.0_rk
+    allocate(r1c(lnum), r1dc(lnum), r2c(lnum), r2dc(lnum), eigout(lnum))
+    allocate(ir1e(lnum), ir1de(lnum), ir2e(lnum), ir2de(lnum), naccr(lnum))
+    allocate(s1c(lnum, 1), s1dc(lnum, 1))
+    allocate(is1e(lnum, 1), is1de(lnum, 1), naccs(lnum, 1))
+
+    call oblfcn(c, m, lnum, ioprad, x, iopang, iopnorm, narg, arg, &
+                r1c, ir1e, r1dc, ir1de, r2c, ir2e, r2dc, ir2de, naccr, &
+                s1c, is1e, s1dc, is1de, naccs, eigout)
+
+    eig = eigout(idx0)
+  end subroutine oblate_eigenvalue_r8
 
 end module oblate_batch_fortran

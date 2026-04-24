@@ -408,7 +408,7 @@ module complex_oblate_swf
 
     subroutine coblfcn(c, m, lnum, ioprad, x, iopang, iopnorm, narg, arg, &
                        r1c, ir1e, r1dc, ir1de, r2c, ir2e, r2dc, ir2de, naccr, &
-                       s1c, is1e, s1dc, is1de, naccs, naccds)
+                       s1c, is1e, s1dc, is1de, naccs, naccds, eigout)
 
 !      version 1.08 May 2021
 !
@@ -583,6 +583,7 @@ module complex_oblate_swf
         integer, intent (in)       ::  m, lnum, ioprad, iopang, iopnorm, narg
         complex(knd), intent (out) ::  r1c(lnum), r1dc(lnum), r2c(lnum), r2dc(lnum), &
                                        s1c(lnum, narg), s1dc(lnum, narg)
+        complex(knd), intent (out) ::  eigout(lnum)
         integer, intent (out)      ::  ir1e(lnum), ir1de(lnum), ir2e(lnum), ir2de(lnum), &
                                        is1e(lnum, narg), is1de(lnum, narg), &
                                        naccr(lnum), naccs(lnum, narg), naccds(lnum, narg)
@@ -782,7 +783,7 @@ end if
                    arg, maxd, maxdr, maxe, maxe2, maxint, maxj, maxlp, maxm, &
                    maxmp, maxn, maxp, maxpdr, maxq, maxt, neta, jnenmax, &
                    jnebmax, xneu, ndec, nex, kindd, kindq, r1c, ir1e, r1dc, &
-                   ir1de, r2c, ir2e, r2dc, ir2de, naccr, s1c, is1e, s1dc, is1de, naccs, naccds)
+                   ir1de, r2c, ir2e, r2dc, ir2de, naccr, s1c, is1e, s1dc, is1de, naccs, naccds, eigout)
 !
         end subroutine
 !
@@ -793,7 +794,7 @@ end if
                          maxj, maxlp, maxm, maxmp, maxn, maxp, maxpdr, &
                          maxq, maxt, neta, jnenmax, jnebmax, xneu, ndec, nex, &
                          kindd, kindq, r1c, ir1e, r1dc, ir1de, r2c, ir2e, r2dc, &
-                         ir2de, nar, s1, is1, s1d, is1d, nas, nads)
+                         ir2de, nar, s1, is1, s1d, is1d, nas, nads, eig)
 !
 !  purpose:     To coordinate the calculation of both the oblate
 !               spheroidal radial and angular functions and their

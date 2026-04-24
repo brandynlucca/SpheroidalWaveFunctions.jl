@@ -403,7 +403,7 @@ module complex_prolate_swf
      
       subroutine cprofcn(cc, m, lnum, ioprad, x1, iopang, iopnorm, narg, arg, &
                        r1c, ir1e, r1dc, ir1de, r2c, ir2e, r2dc, ir2de, naccr, &
-                       s1c, is1e, s1dc, is1de, naccs, naccds)
+                       s1c, is1e, s1dc, is1de, naccs, naccds, eigout)
 
 !      version 1.06 August 2024
 !
@@ -582,6 +582,7 @@ module complex_prolate_swf
         integer, intent (in)       ::  m, lnum, ioprad, iopang, iopnorm, narg
         complex(knd), intent (out) ::  r1c(lnum), r1dc(lnum), r2c(lnum), r2dc(lnum), &
                                        s1c(lnum, narg), s1dc(lnum, narg)
+        complex(knd), intent (out) ::  eigout(lnum)
         integer, intent (out)      ::  ir1e(lnum), ir1de(lnum), ir2e(lnum), ir2de(lnum), &
                                        is1e(lnum, narg), is1de(lnum, narg), &
                                        naccr(lnum), naccs(lnum, narg), naccds(lnum, narg)
@@ -673,7 +674,7 @@ end if
                    minacc, x1, ngau, narg, arg, maxd, maxdr, maxint, maxj, &
                    maxlp, maxm, maxmp, maxn, maxp, maxpdr, maxq, maxt, neta, &
                    jnenmax, ndec, nex, kindd, kindq, r1c, ir1e, r1dc, ir1de, r2c, &
-                   ir2e, r2dc, ir2de, naccr, s1c, is1e, s1dc, is1de, naccs, naccds)
+                   ir2e, r2dc, ir2de, naccr, s1c, is1e, s1dc, is1de, naccs, naccds, eigout)
 !
         end subroutine
 !
@@ -683,7 +684,7 @@ end if
                          maxj, maxlp, maxm, maxmp, maxn, maxp, maxpdr, maxq, &
                          maxt, neta, jnenmax, ndec, nex, kindd, kindq, &
                          r1c, ir1e, r1dc, ir1de, r2c, ir2e, r2dc, ir2de, nar, &
-                         s1, is1, s1d, is1d, nas, nads)
+                         s1, is1, s1d, is1d, nas, nads, eig)
 !
 !  purpose:     to coordinate the calculation of both the prolate
 !               spheroidal radial and angular functions and their

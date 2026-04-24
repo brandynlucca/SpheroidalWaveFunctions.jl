@@ -440,7 +440,7 @@ module prolate_swf
   subroutine profcn(c, m, lnum, ioprad, x1, iopang, iopnorm, narg, arg, &
            r1c, ir1e, r1dc, ir1de, r2c, &
            ir2e, r2dc, ir2de, naccr, &
-           s1c, is1e, s1dc, is1de, naccs)
+           s1c, is1e, s1dc, is1de, naccs, eigout)
 
 !      version 1.15 Dec 2023
 !
@@ -576,6 +576,7 @@ module prolate_swf
     integer, intent (in)  :: m, lnum, ioprad, iopang, iopnorm, narg
     real(knd), intent (out) :: r1c(lnum), r1dc(lnum), r2c(lnum), r2dc(lnum), &
                   s1c(lnum, narg), s1dc(lnum, narg)
+    real(knd), intent (out) :: eigout(lnum)
     integer, intent (out)  :: ir1e(lnum), ir1de(lnum), ir2e(lnum), ir2de(lnum), &
                   is1e(lnum, narg), is1de(lnum, narg), naccr(lnum), &
                   naccs(lnum, narg)
@@ -662,7 +663,7 @@ module prolate_swf
           x1, ngau, arg, narg, neta, maxd, maxdr, maxint, maxj, maxlp, &
           maxm, maxmp, maxn, maxp, maxpdr, maxq, maxt, jnenmax, &
           kindd, kindq, ndec, nex, r1c, ir1e, r1dc, ir1de, r2c, ir2e, &
-          r2dc, ir2de, naccr, s1c, is1e, s1dc, is1de, naccs)
+        r2dc, ir2de, naccr, s1c, is1e, s1dc, is1de, naccs, eigout)
 
     end subroutine
 
@@ -671,7 +672,7 @@ module prolate_swf
              maxint, maxj, maxlp, maxm, maxmp, maxn, maxp, maxpdr, &
              maxq, maxt, jnenmax, kindd, kindq, ndec, nex, qr1, ir1, &
              qr1d, ir1d, qr2, ir2, qr2d, ir2d, nar, s1, is1, s1d, is1d, &
-             nas)
+             nas, eig)
 
 !  purpose:     To coordinate the calculation of both the prolate
 !               spheroidal radial and angular functions and their

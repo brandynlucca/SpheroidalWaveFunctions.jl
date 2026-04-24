@@ -5,7 +5,12 @@ makedocs(
     sitename = "SpheroidalWaves.jl",
     modules = [SpheroidalWaves],
     authors = "SpheroidalWaves contributors",
-    format = Documenter.HTML(prettyurls = get(ENV, "CI", "false") == "true"),
+    repo = "https://github.com/brandynlucca/SpheroidalWaves.jl/blob/{commit}{path}#{line}",
+    format = Documenter.HTML(
+        prettyurls = get(ENV, "CI", "false") == "true",
+        repolink = "https://github.com/brandynlucca/SpheroidalWaves.jl",
+        edit_link = "main",
+    ),
     pages = [
         "Home" => "index.md",
         "API" => "api.md",

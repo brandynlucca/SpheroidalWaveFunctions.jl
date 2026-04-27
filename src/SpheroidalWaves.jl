@@ -12,10 +12,10 @@ const _backend_libraries = Dict{Symbol,Union{Nothing,String}}(
 
 const _backend_handles = Dict{String,Ptr{Cvoid}}()
 
-const _ENV_BACKEND_R8 = "SPHEROIDALWAVES_LIBRARY_R8"
-const _ENV_BACKEND_R16 = "SPHEROIDALWAVES_LIBRARY_R16"
-const _ARTIFACT_R8 = "spheroidal_backend_r8"
-const _ARTIFACT_R16 = "spheroidal_backend_r16"
+const _ENV_BACKEND_DOUBLE = "SPHEROIDALWAVES_LIBRARY_DOUBLE"
+const _ENV_BACKEND_QUAD = "SPHEROIDALWAVES_LIBRARY_QUAD"
+const _ARTIFACT_DOUBLE = "spheroidal_backend_double"
+const _ARTIFACT_QUAD = "spheroidal_backend_quad"
 
 function _validate_precision(precision::Symbol)
     if precision != :double && precision != :quad
@@ -51,11 +51,11 @@ end
 
 function _configure_backends_from_env!()
     configured_any = false
-    if haskey(ENV, _ENV_BACKEND_R8)
-        configured_any |= _set_backend_from_candidate(ENV[_ENV_BACKEND_R8], :double, "ENV[$_ENV_BACKEND_R8]")
+    if haskey(ENV, _ENV_BACKEND_DOUBLE)
+        configured_any |= _set_backend_from_candidate(ENV[_ENV_BACKEND_DOUBLE], :double, "ENV[$_ENV_BACKEND_DOUBLE]")
     end
-    if haskey(ENV, _ENV_BACKEND_R16)
-        configured_any |= _set_backend_from_candidate(ENV[_ENV_BACKEND_R16], :quad, "ENV[$_ENV_BACKEND_R16]")
+    if haskey(ENV, _ENV_BACKEND_QUAD)
+        configured_any |= _set_backend_from_candidate(ENV[_ENV_BACKEND_QUAD], :quad, "ENV[$_ENV_BACKEND_QUAD]")
     end
     return configured_any
 end
@@ -88,12 +88,16 @@ function _configure_one_backend_from_artifact!(artifact_name::String, precision:
     end
 
     root = Artifacts.artifact_path(hash)
-    libname = precision === :double ? _backend_filename("spheroidal_batch_r8") : _backend_filename("spheroidal_batch_r16")
-    candidates = [
-        joinpath(root, libname),
-        joinpath(root, "lib", libname),
-        joinpath(root, "bin", libname),
-    ]
+    stems = precision === :double ? ["spheroidal_batch_double"] : ["spheroidal_batch_quad"]
+    candidates = String[]
+    for stem in stems
+        libname = _backend_filename(stem)
+        append!(candidates, [
+            joinpath(root, libname),
+            joinpath(root, "lib", libname),
+            joinpath(root, "bin", libname),
+        ])
+    end
 
     for path in candidates
         if _set_backend_from_candidate(path, precision, "artifact $artifact_name")
@@ -105,8 +109,8 @@ end
 
 function _configure_backends_from_artifacts!()
     configured_any = false
-    configured_any |= _configure_one_backend_from_artifact!(_ARTIFACT_R8, :double)
-    configured_any |= _configure_one_backend_from_artifact!(_ARTIFACT_R16, :quad)
+    configured_any |= _configure_one_backend_from_artifact!(_ARTIFACT_DOUBLE, :double)
+    configured_any |= _configure_one_backend_from_artifact!(_ARTIFACT_QUAD, :quad)
     return configured_any
 end
 
@@ -118,13 +122,13 @@ function _configure_backends_from_local_config!()
 
     configured_any = false
     include(config_file)
-    if isdefined(@__MODULE__, :SPHEROIDAL_BATCH_LIBRARY_R8)
-        lib_r8 = Base.invokelatest(getfield, @__MODULE__, :SPHEROIDAL_BATCH_LIBRARY_R8)
-        configured_any |= _set_backend_from_candidate(lib_r8, :double, "local library_config.jl")
+    if isdefined(@__MODULE__, :SPHEROIDAL_BATCH_LIBRARY_DOUBLE)
+        lib_double = Base.invokelatest(getfield, @__MODULE__, :SPHEROIDAL_BATCH_LIBRARY_DOUBLE)
+        configured_any |= _set_backend_from_candidate(lib_double, :double, "local library_config.jl")
     end
-    if isdefined(@__MODULE__, :SPHEROIDAL_BATCH_LIBRARY_R16)
-        lib_r16 = Base.invokelatest(getfield, @__MODULE__, :SPHEROIDAL_BATCH_LIBRARY_R16)
-        configured_any |= _set_backend_from_candidate(lib_r16, :quad, "local library_config.jl")
+    if isdefined(@__MODULE__, :SPHEROIDAL_BATCH_LIBRARY_QUAD)
+        lib_quad = Base.invokelatest(getfield, @__MODULE__, :SPHEROIDAL_BATCH_LIBRARY_QUAD)
+        configured_any |= _set_backend_from_candidate(lib_quad, :quad, "local library_config.jl")
     end
     return configured_any
 end
@@ -140,7 +144,7 @@ function _require_backend_library(precision::Symbol)
         
         To resolve this, try one of:
         1. Ensure artifacts are available (they should download automatically on first use).
-        2. Set environment variable: SPHEROIDALWAVES_LIBRARY_R$(precision === :double ? "8" : "16") = /path/to/lib
+        2. Set environment variable: SPHEROIDALWAVES_LIBRARY_$(uppercase(String(precision))) = /path/to/lib
         3. Run: julia> import Pkg; Pkg.build("SpheroidalWaves")
         
         See https://github.com/Brandyn/SpheroidalWaves.jl/docs/src/backend-overrides.md for details.
@@ -160,7 +164,7 @@ function _symbol_pointer(lib::String, symbol::Symbol)
 end
 
 function _real_suffix(precision::Symbol)
-    return precision === :double ? "_r8" : "_r16"
+    return precision === :double ? "_double" : "_quad"
 end
 
 function _complex_suffix(precision::Symbol)
@@ -187,6 +191,90 @@ function _complex_parts(re::Vector{Float64}, im::Vector{Float64})
     out = Vector{ComplexF64}(undef, length(re))
     @inbounds for i in eachindex(re)
         out[i] = complex(re[i], im[i])
+    end
+    return out
+end
+
+function _combine_split_parts(hi::Vector{Float64}, lo::Vector{Float64})
+    out = Vector{BigFloat}(undef, length(hi))
+    @inbounds for i in eachindex(hi)
+        out[i] = BigFloat(hi[i]) + BigFloat(lo[i])
+    end
+    return out
+end
+
+function _split_real_to_double_pair(x::Real)
+    bx = BigFloat(x)
+    hi = Float64(bx)
+    lo = Float64(bx - BigFloat(hi))
+    return hi, lo
+end
+
+function _split_real_vector_to_double_pairs(xs::AbstractVector{<:Real})
+    n = length(xs)
+    hi = Vector{Float64}(undef, n)
+    lo = Vector{Float64}(undef, n)
+    @inbounds for i in eachindex(xs)
+        h, l = _split_real_to_double_pair(xs[i])
+        hi[i] = h
+        lo[i] = l
+    end
+    return hi, lo
+end
+
+function _combine_split_complex_parts(re_hi::Vector{Float64}, re_lo::Vector{Float64}, im_hi::Vector{Float64}, im_lo::Vector{Float64})
+    out = Vector{Complex{BigFloat}}(undef, length(re_hi))
+    @inbounds for i in eachindex(re_hi)
+        re = BigFloat(re_hi[i]) + BigFloat(re_lo[i])
+        im = BigFloat(im_hi[i]) + BigFloat(im_lo[i])
+        out[i] = Complex{BigFloat}(re, im)
+    end
+    return out
+end
+
+const _QUAD_TEXT_WIDTH = 96
+
+function _encode_real_text_scalar(x::Real; width::Int=_QUAD_TEXT_WIDTH)
+    s = string(BigFloat(x))
+    if ncodeunits(s) > width
+        error("Quad text payload overflow for scalar input; increase _QUAD_TEXT_WIDTH.")
+    end
+    out = fill(UInt8(' '), width)
+    copyto!(out, 1, codeunits(s), 1, ncodeunits(s))
+    return out
+end
+
+function _encode_real_text_vector(xs::AbstractVector{<:Real}; width::Int=_QUAD_TEXT_WIDTH)
+    n = length(xs)
+    out = fill(UInt8(' '), width * n)
+    @inbounds for i in eachindex(xs)
+        s = string(BigFloat(xs[i]))
+        if ncodeunits(s) > width
+            error("Quad text payload overflow for vector input; increase _QUAD_TEXT_WIDTH.")
+        end
+        off = (i - 1) * width + 1
+        copyto!(out, off, codeunits(s), 1, ncodeunits(s))
+    end
+    return out
+end
+
+function _decode_real_text_vector(buf::Vector{UInt8}, n::Integer; width::Int=_QUAD_TEXT_WIDTH)
+    out = Vector{BigFloat}(undef, n)
+    @inbounds for i in 1:n
+        off = (i - 1) * width + 1
+        s = strip(String(buf[off:(off + width - 1)]))
+        out[i] = BigFloat(s)
+    end
+    return out
+end
+
+function _decode_scaled_real_text_vector(buf::Vector{UInt8}, exponents::Vector{Cint}, n::Integer; width::Int=_QUAD_TEXT_WIDTH)
+    out = Vector{BigFloat}(undef, n)
+    @inbounds for i in 1:n
+        off = (i - 1) * width + 1
+        s = strip(String(buf[off:(off + width - 1)]))
+        mant = BigFloat(s)
+        out[i] = mant * (big(10) ^ Int(exponents[i]))
     end
     return out
 end
@@ -373,19 +461,47 @@ end
 
 function _call_real_smn(prefix::Symbol, m::Integer, n::Integer, c::Real, eta::AbstractVector{<:Real}; precision::Symbol=:double, normalize::Bool=false)
     if _is_exact_spherical_limit(c)
-        return _spherical_smn_real(m, n, eta; normalize=normalize)
+        result = _spherical_smn_real(m, n, eta; normalize=normalize)
+        if precision === :quad
+            return (; value=BigFloat.(result.value), derivative=BigFloat.(result.derivative))
+        end
+        return result
     end
 
     lib = _require_backend_library(precision)
-    suffix = _real_suffix(precision)
-    symbol = Symbol(String(prefix) * "_smn_batch" * suffix)
+    symbol = if precision === :quad
+        Symbol(String(prefix) * "_smn_batch_quad_text")
+    else
+        suffix = _real_suffix(precision)
+        Symbol(String(prefix) * "_smn_batch" * suffix)
+    end
     fnptr = _symbol_pointer(lib, symbol)
 
     n_eta = Cint(length(eta))
     eta64 = Float64.(eta)
+    status = Ref{Cint}(0)
+
+    if precision === :quad
+          c_text = _encode_real_text_scalar(c)
+          eta_text = _encode_real_text_vector(eta)
+          value_text = fill(UInt8(' '), _QUAD_TEXT_WIDTH * Int(n_eta))
+          derivative_text = fill(UInt8(' '), _QUAD_TEXT_WIDTH * Int(n_eta))
+          value_exp = zeros(Cint, Int(n_eta))
+          derivative_exp = zeros(Cint, Int(n_eta))
+
+        ccall(fnptr, Cvoid,
+              (Cint, Cint, Cint, Cint, Ptr{UInt8}, Cint, Ptr{UInt8}, Ptr{UInt8}, Ptr{Cint}, Ptr{UInt8}, Ptr{Cint}, Ref{Cint}),
+              Cint(m), Cint(n), n_eta, _bool_to_cint(normalize), c_text, Cint(_QUAD_TEXT_WIDTH), eta_text,
+              value_text, value_exp, derivative_text, derivative_exp, status)
+
+        _check_scalar_status(status[])
+          value = _decode_scaled_real_text_vector(value_text, value_exp, Int(n_eta))
+          derivative = _decode_scaled_real_text_vector(derivative_text, derivative_exp, Int(n_eta))
+        return (; value, derivative)
+    end
+
     value = zeros(Float64, n_eta)
     derivative = zeros(Float64, n_eta)
-    status = Ref{Cint}(0)
 
     ccall(fnptr, Cvoid,
           (Cint, Cint, Cdouble, Cint, Ptr{Cdouble}, Cint, Ptr{Cdouble}, Ptr{Cdouble}, Ref{Cint}),
@@ -401,17 +517,46 @@ function _call_real_rmn(prefix::Symbol, m::Integer, n::Integer, c::Real, x::Abst
     end
 
     lib = _require_backend_library(precision)
-    suffix = _real_suffix(precision)
-    symbol = Symbol(String(prefix) * "_rmn_batch" * suffix)
+    symbol = if precision === :quad
+        Symbol(String(prefix) * "_rmn_batch_quad_fullsplit")
+    else
+        suffix = _real_suffix(precision)
+        Symbol(String(prefix) * "_rmn_batch" * suffix)
+    end
     fnptr = _symbol_pointer(lib, symbol)
 
     n_x = Cint(length(x))
+    status = zeros(Cint, n_x)
+
+    if precision === :quad
+        c_hi, c_lo = _split_real_to_double_pair(c)
+        x_hi, x_lo = _split_real_vector_to_double_pairs(x)
+        value_re_hi = zeros(Float64, n_x)
+        value_re_lo = zeros(Float64, n_x)
+        value_im_hi = zeros(Float64, n_x)
+        value_im_lo = zeros(Float64, n_x)
+        deriv_re_hi = zeros(Float64, n_x)
+        deriv_re_lo = zeros(Float64, n_x)
+        deriv_im_hi = zeros(Float64, n_x)
+        deriv_im_lo = zeros(Float64, n_x)
+
+        ccall(fnptr, Cvoid,
+              (Cint, Cint, Cdouble, Cdouble, Cint, Ptr{Cdouble}, Ptr{Cdouble}, Cint, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}),
+              Cint(m), Cint(n), Cdouble(c_hi), Cdouble(c_lo), n_x, x_hi, x_lo, Cint(kind),
+              value_re_hi, value_re_lo, value_im_hi, value_im_lo,
+              deriv_re_hi, deriv_re_lo, deriv_im_hi, deriv_im_lo, status)
+
+        _check_vector_status(status)
+        value = _combine_split_complex_parts(value_re_hi, value_re_lo, value_im_hi, value_im_lo)
+        derivative = _combine_split_complex_parts(deriv_re_hi, deriv_re_lo, deriv_im_hi, deriv_im_lo)
+        return (; value, derivative)
+    end
+
     x64 = Float64.(x)
     value_re = zeros(Float64, n_x)
     value_im = zeros(Float64, n_x)
     deriv_re = zeros(Float64, n_x)
     deriv_im = zeros(Float64, n_x)
-    status = zeros(Cint, n_x)
 
     ccall(fnptr, Cvoid,
           (Cint, Cint, Cdouble, Cint, Ptr{Cdouble}, Cint, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cint}),
@@ -583,13 +728,31 @@ end
 
 function _call_real_eigenvalue(prefix::Symbol, m::Integer, n::Integer, c::Real; precision::Symbol=:double)
     if _is_exact_spherical_limit(c)
-        return Float64(n * (n + 1))
+        return precision === :quad ? BigFloat(n * (n + 1)) : Float64(n * (n + 1))
     end
 
     lib = _require_backend_library(precision)
-    suffix = _real_suffix(precision)
-    symbol = Symbol(String(prefix) * "_eigenvalue" * suffix)
+    symbol = if precision === :quad
+        Symbol(String(prefix) * "_eigenvalue_quad_fullsplit")
+    else
+        suffix = _real_suffix(precision)
+        Symbol(String(prefix) * "_eigenvalue" * suffix)
+    end
     fnptr = _symbol_pointer(lib, symbol)
+
+    if precision === :quad
+        c_hi, c_lo = _split_real_to_double_pair(c)
+        eig_hi = Ref{Cdouble}(0.0)
+        eig_lo = Ref{Cdouble}(0.0)
+        status = Ref{Cint}(0)
+
+        ccall(fnptr, Cvoid,
+              (Cint, Cint, Cdouble, Cdouble, Ref{Cdouble}, Ref{Cdouble}, Ref{Cint}),
+              Cint(m), Cint(n), Cdouble(c_hi), Cdouble(c_lo), eig_hi, eig_lo, status)
+
+        _check_scalar_status(status[])
+        return BigFloat(eig_hi[]) + BigFloat(eig_lo[])
+    end
 
     eig = Ref{Cdouble}(0.0)
     status = Ref{Cint}(0)
@@ -651,9 +814,10 @@ polynomials when c is small.
         Size parameter (prolate: c = kd/2 with k=wavenumber, d=interfocal distance)
         - Real c: real-valued functions
         - Complex c: complex-valued functions (advanced applications)
-    η::AbstractVector{<:Real}
-        Evaluation points in [-1, 1]
+    η::Union{Real,AbstractVector{<:Real}}
+        Evaluation point(s) in [-1, 1]
         Represents cos(θ) where θ is angle in spherical coordinates
+        Scalar inputs are forwarded as a one-point batch
     
     Keyword Arguments:
         spheroid::Symbol = :prolate
@@ -720,6 +884,11 @@ polynomials when c is small.
     - DLMF §30.2: https://dlmf.nist.gov/30.2
     - Van Buren & Boisvert (2004): Accurate calculation of prolate spheroidal wave functions
 """
+function smn(m::Integer, n::Integer, c::Union{Real,Complex}, eta::Real;
+             spheroid::Symbol=:prolate, precision::Symbol=:double, normalize::Bool=false)
+    return smn(m, n, c, [eta]; spheroid=spheroid, precision=precision, normalize=normalize)
+end
+
 function smn(m::Integer, n::Integer, c::Union{Real,Complex}, eta::AbstractVector{<:Real};
              spheroid::Symbol=:prolate, precision::Symbol=:double, normalize::Bool=false)
 

@@ -50,6 +50,14 @@ using Test
         @test_throws ErrorException eigenvalue_sweep(0, 1, [0.0, 1.0]; branch_window=-1)
     end
 
+    @testset "Scalar smn Convenience Overload" begin
+        vector_result = smn(0, 2, 0.0, [0.5]; spheroid=:prolate, precision=:double)
+        scalar_result = smn(0, 2, 0.0, 0.5; spheroid=:prolate, precision=:double)
+
+        @test scalar_result.value == vector_result.value
+        @test scalar_result.derivative == vector_result.derivative
+    end
+
     @testset "Eigenvalue Continuation Branch Lock" begin
         # Synthetic evaluator that swaps n=2 and n=3 branches at c=1.0 only.
         # The continuation predictor-corrector should stay on the original smooth
@@ -180,6 +188,22 @@ using Test
             assert_allclose(sp00.value, published_s00; atol=1e-12)
             assert_allclose(sp00.derivative, published_s00d; atol=1e-12)
 
+            # Direct Wolfram|Alpha angular benchmarks.
+            wolfram_smn_cases = [
+                ((0, 0, 0.0, 0.3), 1.0, 0.0),
+                ((0, 1, 0.0, 0.3), 0.3, 1.0),
+                ((1, 2, 0.5, 0.25), -0.7309295344004918, -2.7222906159495754),
+                ((2, 3, 1.0, 0.5), 5.65036805385163, 3.4543263211124438),
+                ((2, 5, 10.0, 0.6), 13.831303334796436, 21.40430253808833),
+            ]
+            for ((m, n, c, eta_wa), expected_value, expected_derivative) in wolfram_smn_cases
+                result = smn(m, n, c, eta_wa; spheroid=:prolate, precision=:double)
+                expected_value_pkg = (-1)^m * expected_value
+                expected_derivative_pkg = (-1)^m * expected_derivative
+                @test isapprox(result.value[1], expected_value_pkg; atol=1e-11, rtol=1e-11)
+                @test isapprox(result.derivative[1], expected_derivative_pkg; atol=1e-11, rtol=1e-11)
+            end
+
             x_prolate = [1.1]
             prolate_r1_l0 = [-6.32691894914518e-3]
             prolate_r1d_l0 = [-1.47014223025242e0]
@@ -212,6 +236,27 @@ using Test
             assert_allclose(imag.(rp2_l1.value), [0.0]; atol=1e-12)
             assert_allclose(real.(rp2_l1.derivative), prolate_r2d_l1; atol=1e-12)
             assert_allclose(imag.(rp2_l1.derivative), [0.0]; atol=1e-12)
+
+            # Direct Wolfram|Alpha radial benchmarks.
+            wolfram_rmn_kind1_cases = [
+                ((0, 0, 0.5, 1.5), 0.9355129525869241),
+                ((0, 1, 1.0, 2.0), 0.45603690333332372100494242600202824193682868459324),
+                ((2, 3, 2.0, 1.8), 0.1681696391119482),
+            ]
+            for ((m, n, c, x_wa), expected_value) in wolfram_rmn_kind1_cases
+                result = rmn(m, n, c, [x_wa]; spheroid=:prolate, precision=:double, kind=1)
+                @test isapprox(real(result.value[1]), expected_value; atol=1e-11, rtol=1e-11)
+                @test isapprox(imag(result.value[1]), 0.0; atol=1e-12, rtol=0.0)
+            end
+
+            wolfram_rmn_kind2_cases = [
+                ((1, 2, 0.5, 1.3), -24.89681123745018),
+            ]
+            for ((m, n, c, x_wa), expected_value) in wolfram_rmn_kind2_cases
+                result = rmn(m, n, c, [x_wa]; spheroid=:prolate, precision=:double, kind=2)
+                @test isapprox(real(result.value[1]), expected_value; atol=1e-10, rtol=1e-11)
+                @test isapprox(imag(result.value[1]), 0.0; atol=1e-12, rtol=0.0)
+            end
 
             # Published upstream benchmark from Oblate_swf sample files:
             # oblfcndat.txt -> c = 500, x = 0.2, m = 0, eta = 0:0.2:1.0
@@ -399,10 +444,29 @@ using Test
             sq = smn(0, 2, 0.0, eta; spheroid=:prolate, precision=:quad)
             assert_allclose(sq.value, expected_p2; atol=1e-9)
             assert_allclose(sq.derivative, expected_p2d; atol=1e-9)
+            @test eltype(sq.value) == BigFloat
+            @test eltype(sq.derivative) == BigFloat
 
             sqc = smn(0, 2, 0.0 + 0.0im, eta; spheroid=:oblate, precision=:quad)
             assert_allclose(real.(sqc.value), expected_p2; atol=1e-9)
             assert_allclose(imag.(sqc.value), [0.0, 0.0, 0.0]; atol=1e-10)
+
+            # Regression: near-ULP differences at very large magnitudes should remain
+            # representable in quad outputs and not be silently collapsed to Float64.
+            hard_eta = [0.5, 0.6]
+            hard_d = smn(20, 30, 10, hard_eta; spheroid=:prolate, precision=:double)
+            hard_q = smn(20, 30, 10, hard_eta; spheroid=:prolate, precision=:quad)
+            @test eltype(hard_q.value) == BigFloat
+            @test eltype(hard_q.derivative) == BigFloat
+            @test length(hard_q.value) == length(hard_d.value)
+            @test length(hard_q.derivative) == length(hard_d.derivative)
+            hard_delta = hard_d.value .- Float64.(hard_q.value)
+            @test abs(hard_delta[1]) > 1e12
+            @test abs(hard_delta[2]) > 1e12
+
+            # Anchor to the known quad reference for the first hard-case point.
+            expected_hard_q1 = parse(BigFloat, "-1.2910734332856751848614240002571889880500752607625494296991167065182089471e28")
+            @test abs(hard_q.value[1] - expected_hard_q1) <= BigFloat("1e-4")
 
             @test eigenvalue(0, 2, 0.0; spheroid=:prolate, precision=:quad) == 6.0
             @test eigenvalue(0, 2, 0.0 + 0.0im; spheroid=:oblate, precision=:quad) == 6.0 + 0.0im

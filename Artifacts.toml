@@ -1,19 +1,19 @@
 # Artifact bindings for prebuilt backends.
 # Populate these entries with actual hashes/URLs when release binaries are published.
 # Runtime resolution expects each artifact to contain one of these layouts:
-#   <artifact-root>/spheroidal_batch_r8(.dll|.so|.dylib)
-#   <artifact-root>/lib/spheroidal_batch_r8(...)
-#   <artifact-root>/bin/spheroidal_batch_r8(...)
-# and similarly for r16.
+#   <artifact-root>/spheroidal_batch_double(.dll|.so|.dylib)
+#   <artifact-root>/lib/spheroidal_batch_double(...)
+#   <artifact-root>/bin/spheroidal_batch_double(...)
+# and similarly for quad.
 
-# [spheroidal_backend_r8]
+# [spheroidal_backend_double]
 # git-tree-sha1 = "<fill-me>"
-# [[spheroidal_backend_r8.download]]
+# [[spheroidal_backend_double.download]]
 # url = "https://..."
 # sha256 = "<fill-me>"
 
-# [spheroidal_backend_r16]
+# [spheroidal_backend_quad]
 # git-tree-sha1 = "<fill-me>"
-# [[spheroidal_backend_r16.download]]
+# [[spheroidal_backend_quad.download]]
 # url = "https://..."
 # sha256 = "<fill-me>"

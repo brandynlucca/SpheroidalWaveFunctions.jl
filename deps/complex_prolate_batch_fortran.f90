@@ -12,10 +12,10 @@ contains
     v = 10.0_rk ** real(exp10, rk)
   end function pow10_i
 
-  pure logical function is_finite_r8(x) result(ok)
+  pure logical function is_finite_double(x) result(ok)
     real(rk), intent(in) :: x
     ok = (x == x) .and. (abs(x) < huge(x))
-  end function is_finite_r8
+  end function is_finite_double
 
   subroutine cprolate_smn_batch_c8(m, n, c_re, c_im, n_eta, eta, normalize, value_re, value_im, derivative_re, derivative_im, status) bind(C, name="cprolate_smn_batch_c8")
     integer(c_int), value, intent(in) :: m, n, n_eta, normalize
@@ -50,7 +50,7 @@ contains
     end if
 
     do i = 1, n_eta
-      if (abs(eta(i)) > 1.0_rk .or. .not. is_finite_r8(eta(i))) then
+      if (abs(eta(i)) > 1.0_rk .or. .not. is_finite_double(eta(i))) then
         status = -3_c_int
         return
       end if
@@ -150,7 +150,7 @@ contains
     allocate(eigout(lnum))
 
     do i = 1, n_xi
-      if (.not. is_finite_r8(xi(i)) .or. abs(xi(i)) < 1.0_rk) then
+      if (.not. is_finite_double(xi(i)) .or. abs(xi(i)) < 1.0_rk) then
         status(i) = -3_c_int
         cycle
       end if
@@ -230,7 +230,7 @@ contains
     end if
 
     do i = 1, n_eta
-      if (abs(eta(i)) > 1.0_rk .or. .not. is_finite_r8(eta(i))) then
+      if (abs(eta(i)) > 1.0_rk .or. .not. is_finite_double(eta(i))) then
         status = -3_c_int
         return
       end if
@@ -332,7 +332,7 @@ contains
     allocate(eigout(lnum))
 
     do i = 1, n_xi
-      if (.not. is_finite_r8(xi(i)) .or. abs(xi(i)) < 1.0_rk) then
+      if (.not. is_finite_double(xi(i)) .or. abs(xi(i)) < 1.0_rk) then
         status(i) = -3_c_int
         cycle
       end if

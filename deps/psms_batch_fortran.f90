@@ -12,10 +12,10 @@ contains
     v = 10.0_rk ** real(exp10, rk)
   end function pow10_i
 
-  pure logical function is_finite_r8(x) result(ok)
+  pure logical function is_finite_double(x) result(ok)
     real(rk), intent(in) :: x
     ok = (x == x) .and. (abs(x) < huge(x))
-  end function is_finite_r8
+  end function is_finite_double
 
   ! Inputs:
   !   m, n, c, eta(:), normalize
@@ -27,7 +27,7 @@ contains
   !  -2 n < m
   !  -3 invalid eta domain
   !  -4 invalid n_eta
-  subroutine psms_smn_batch_r8(m, n, c, n_eta, eta, normalize, value, derivative, status) bind(C, name="psms_smn_batch_r8")
+  subroutine psms_smn_batch_double(m, n, c, n_eta, eta, normalize, value, derivative, status) bind(C, name="psms_smn_batch_double")
     integer(c_int), value, intent(in) :: m, n, n_eta, normalize
     real(c_double), value, intent(in) :: c
     real(c_double), intent(in) :: eta(*)
@@ -61,7 +61,7 @@ contains
     end if
 
     do i = 1, n_eta
-      if (abs(eta(i)) > 1.0_rk .or. .not. is_finite_r8(eta(i))) then
+      if (abs(eta(i)) > 1.0_rk .or. .not. is_finite_double(eta(i))) then
         status = -3_c_int
         return
       end if
@@ -94,7 +94,7 @@ contains
       value(i) = s1c(idx0, i) * pow10_i(is1e(idx0, i))
       derivative(i) = s1dc(idx0, i) * pow10_i(is1de(idx0, i))
     end do
-  end subroutine psms_smn_batch_r8
+  end subroutine psms_smn_batch_double
 
   ! Inputs:
   !   m, n, c, xi(:), kind
@@ -106,7 +106,7 @@ contains
   !  -2 n < m
   !  -3 invalid xi domain (|xi| < 1)
   !  -4 invalid kind
-  subroutine psms_rmn_batch_r8(m, n, c, n_xi, xi, kind, value_re, value_im, deriv_re, deriv_im, status) bind(C, name="psms_rmn_batch_r8")
+  subroutine psms_rmn_batch_double(m, n, c, n_xi, xi, kind, value_re, value_im, deriv_re, deriv_im, status) bind(C, name="psms_rmn_batch_double")
     integer(c_int), value, intent(in) :: m, n, n_xi, kind
     real(c_double), value, intent(in) :: c
     real(c_double), intent(in) :: xi(*)
@@ -169,7 +169,7 @@ contains
     allocate(eigout(lnum))
 
     do i = 1, n_xi
-      if (abs(xi(i)) < 1.0_rk .or. .not. is_finite_r8(xi(i))) then
+      if (abs(xi(i)) < 1.0_rk .or. .not. is_finite_double(xi(i))) then
         status(i) = -3_c_int
         cycle
       end if
@@ -224,14 +224,14 @@ contains
       end select
     end do
 
-  end subroutine psms_rmn_batch_r8
+  end subroutine psms_rmn_batch_double
 
   ! Angular function with accuracy output
   ! Inputs:
   !   m, n, c, eta(:), normalize
   ! Outputs:
   !   value(:), derivative(:), naccs(:), status
-  subroutine psms_smn_batch_r8_acc(m, n, c, n_eta, eta, normalize, value, derivative, naccs, status) bind(C, name="psms_smn_batch_r8_acc")
+  subroutine psms_smn_batch_double_acc(m, n, c, n_eta, eta, normalize, value, derivative, naccs, status) bind(C, name="psms_smn_batch_double_acc")
     integer(c_int), value, intent(in) :: m, n, n_eta, normalize
     real(c_double), value, intent(in) :: c
     real(c_double), intent(in) :: eta(*)
@@ -265,7 +265,7 @@ contains
     end if
 
     do i = 1, n_eta
-      if (abs(eta(i)) > 1.0_rk .or. .not. is_finite_r8(eta(i))) then
+      if (abs(eta(i)) > 1.0_rk .or. .not. is_finite_double(eta(i))) then
         status = -3_c_int
         return
       end if
@@ -299,14 +299,14 @@ contains
       derivative(i) = s1dc(idx0, i) * pow10_i(is1de(idx0, i))
       naccs(i) = naccs_tmp(idx0, i)
     end do
-  end subroutine psms_smn_batch_r8_acc
+  end subroutine psms_smn_batch_double_acc
 
   ! Radial function with accuracy output
   ! Inputs:
   !   m, n, c, xi(:), kind
   ! Outputs:
   !   value_re(:), value_im(:), deriv_re(:), deriv_im(:), naccr(:), status(:)
-  subroutine psms_rmn_batch_r8_acc(m, n, c, n_xi, xi, kind, value_re, value_im, deriv_re, deriv_im, naccr_out, status) bind(C, name="psms_rmn_batch_r8_acc")
+  subroutine psms_rmn_batch_double_acc(m, n, c, n_xi, xi, kind, value_re, value_im, deriv_re, deriv_im, naccr_out, status) bind(C, name="psms_rmn_batch_double_acc")
     integer(c_int), value, intent(in) :: m, n, n_xi, kind
     real(c_double), value, intent(in) :: c
     real(c_double), intent(in) :: xi(*)
@@ -413,9 +413,9 @@ contains
       end select
     end do
 
-  end subroutine psms_rmn_batch_r8_acc
+  end subroutine psms_rmn_batch_double_acc
 
-  subroutine psms_eigenvalue_r8(m, n, c, eig, status) bind(C, name="psms_eigenvalue_r8")
+  subroutine psms_eigenvalue_double(m, n, c, eig, status) bind(C, name="psms_eigenvalue_double")
     integer(c_int), value, intent(in) :: m, n
     real(c_double), value, intent(in) :: c
     real(c_double), intent(out) :: eig
@@ -461,6 +461,6 @@ contains
                 s1c, is1e, s1dc, is1de, naccs, eigout)
 
     eig = eigout(idx0)
-  end subroutine psms_eigenvalue_r8
+  end subroutine psms_eigenvalue_double
 
 end module psms_batch_fortran

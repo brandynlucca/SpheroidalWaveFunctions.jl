@@ -26,7 +26,7 @@
 ! -----------------------------------------------------------------------------
 
 module param
-    integer, parameter :: knd = selected_real_kind(16)
+    integer, parameter :: knd = selected_real_kind(33)
     logical, parameter :: debug = .false.
     logical, parameter :: warn = .false.
     logical, parameter :: output = .false.

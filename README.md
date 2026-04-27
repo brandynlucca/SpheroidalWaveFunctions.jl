@@ -110,8 +110,8 @@ When new backend binaries are published, update `Artifacts.toml` with:
 
 ```julia
 julia scripts/update_artifacts.jl Artifacts.toml \
-   <r8_url> <r8_tarball_path> \
-   <r16_url> <r16_tarball_path>
+   <double_url> <double_tarball_path> \
+   <quad_url> <quad_tarball_path>
 ```
 
 Or use the manual GitHub workflow:

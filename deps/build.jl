@@ -161,35 +161,35 @@ end
 # Step 3: Verify Source Files Exist
 # ============================================================================
 function verify_sources()
-    base_solvers_r8 = [
+    base_solvers_double = [
         "prolate_swf.f90",
         "oblate_swf.f90",
         "complex_prolate_swf.f90",
         "complex_oblate_swf.f90",
     ]
     
-    batch_wrappers_r8 = [
+    batch_wrappers_double = [
         "psms_batch_fortran.f90",
         "oblate_batch_fortran.f90",
         "complex_prolate_batch_fortran.f90",
         "complex_oblate_batch_fortran.f90",
     ]
 
-    base_solvers_r16 = [
-        "prolate_swf_r16.f90",
-        "oblate_swf_r16.f90",
-        "complex_prolate_swf_r16.f90",
-        "complex_oblate_swf_r16.f90",
+    base_solvers_quad = [
+        "prolate_swf_quad.f90",
+        "oblate_swf_quad.f90",
+        "complex_prolate_swf_quad.f90",
+        "complex_oblate_swf_quad.f90",
     ]
 
-    batch_wrappers_r16 = [
-        "psms_batch_fortran_r16.f90",
-        "oblate_batch_fortran_r16.f90",
-        "complex_prolate_batch_fortran_r16.f90",
-        "complex_oblate_batch_fortran_r16.f90",
+    batch_wrappers_quad = [
+        "psms_batch_fortran_quad.f90",
+        "oblate_batch_fortran_quad.f90",
+        "complex_prolate_batch_fortran_quad.f90",
+        "complex_oblate_batch_fortran_quad.f90",
     ]
 
-    all_sources = [base_solvers_r8; batch_wrappers_r8; base_solvers_r16; batch_wrappers_r16]
+    all_sources = [base_solvers_double; batch_wrappers_double; base_solvers_quad; batch_wrappers_quad]
     deps_dir = joinpath(PROJECT_DIR, "deps")
 
     for src in all_sources
@@ -302,7 +302,7 @@ end
 
 function verify_libraries_built()
     lib_dir = detect_library_dir()
-    stems = ["spheroidal_batch_r8", "spheroidal_batch_r16"]
+    stems = ["spheroidal_batch_double", "spheroidal_batch_quad"]
     ok = true
     for stem in stems
         path = _find_built_library(lib_dir, stem)
@@ -321,29 +321,29 @@ end
 # ============================================================================
 function configure_library_paths()
     lib_dir = detect_library_dir()
-    lib_r8_path = _find_built_library(lib_dir, "spheroidal_batch_r8")
-    lib_r16_path = _find_built_library(lib_dir, "spheroidal_batch_r16")
-    if lib_r8_path === nothing || lib_r16_path === nothing
+    lib_double_path = _find_built_library(lib_dir, "spheroidal_batch_double")
+    lib_quad_path = _find_built_library(lib_dir, "spheroidal_batch_quad")
+    if lib_double_path === nothing || lib_quad_path === nothing
         error_msg("Cannot write library config because one or more built libraries were not found.")
         return false
     end
-    lib_r8 = replace(lib_r8_path, '\\' => '/')
-    lib_r16 = replace(lib_r16_path, '\\' => '/')
+    lib_double = replace(lib_double_path, '\\' => '/')
+    lib_quad = replace(lib_quad_path, '\\' => '/')
 
     config_script = """
     # Auto-generated: library path configuration
     # Set on package load in src/SpheroidalWaves.jl
 
-    const SPHEROIDAL_BATCH_LIBRARY_R8 = "$lib_r8"
-    const SPHEROIDAL_BATCH_LIBRARY_R16 = "$lib_r16"
+    const SPHEROIDAL_BATCH_LIBRARY_DOUBLE = "$lib_double"
+    const SPHEROIDAL_BATCH_LIBRARY_QUAD = "$lib_quad"
     """
 
     config_file = joinpath(SCRIPT_DIR, "library_config.jl")
     write(config_file, config_script)
 
     info_msg("Library path configuration written to: $config_file")
-    info_msg("r8 library path: $lib_r8")
-    info_msg("r16 library path: $lib_r16")
+    info_msg("double library path: $lib_double")
+    info_msg("quad library path: $lib_quad")
     return true
 end
 
@@ -352,7 +352,7 @@ end
 # ============================================================================
 function main()
     info_msg("SpheroidalWaves Fortran batch build starting...")
-    info_msg("Building dual precision backends (r8 and r16)")
+    info_msg("Building dual precision backends (double and quad)")
     info_msg("Build directory: $BUILD_DIR")
     
     # Check prerequisites

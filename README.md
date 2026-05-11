@@ -1,8 +1,9 @@
 # SpheroidalWaves.jl
 
-[![Build Status](https://github.com/brandynlucca/SpheroidalWaves.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/brandynlucca/SpheroidalWaves.jl/actions/workflows/CI.yml?query=branch%3Amain)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/brandynlucca/SpheroidalWaves.jl/blob/main/LICENSE)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19728040.svg)](https://doi.org/10.5281/zenodo.19728040)
+[![Documentation](https://img.shields.io/badge/Latest_Documentation-blue)](https://brandynlucca.github.io/SpheroidalWaves.jl)
+[![Branch Status](https://img.shields.io/github/actions/workflow/status/brandynlucca/SpheroidalWaves.jl/CI.yml?branch=main&label=Branch%20Status)](https://github.com/brandynlucca/SpheroidalWaves.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/brandynlucca/SpheroidalWaves.jl/blob/main/LICENSE) 
+[![DOI: Latest](https://zenodo.org/badge/DOI/10.5281/zenodo.19728040.svg)](https://doi.org/10.5281/zenodo.19728040)
 
 Fast, vectorized computation of spheroidal wave functions with native Fortran kernels.
 
